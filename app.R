@@ -37,7 +37,7 @@ options(shiny.maxRequestSize = 30*1024^2)
 # Load processed data (for choices under selectInput)
 hourly <- read_csv("./data/hourly.csv")
 per_hour <- read_csv("./data/per_hour.csv")
-shared_hourly <- SharedData$new(per_hour)
+
 
 # Extract time range (for min and max under sliderInput)
 #mindate = as.Date("2007-07-01 00:00:00","%Y-%m-%d %H:%M:%S")
@@ -92,21 +92,14 @@ ui <- dashboardPage(
                    box(
                      splitLayout(
                        cellArgs = list(style = "padding-left:0px;padding-bottom:67px;"),
-                       filter_checkbox(
-                         "hFunSys_item_pc", 
-                         "Function System", 
-                          shared_hourly, 
-                          ~FunSys_item
-                         )),
-                       
-                       # selectInput(
-                       #   inputId = 'hFunSys_item_pc',
-                       #   label = 'Function System:',
-                       #   choices = unique(as.vector(shared_hourly['FunSys_item'])),
-                       #   selected = '01',
-                       #   multiple = FALSE,
-                       #   selectize = FALSE)
-                       # ),
+                       selectInput(
+                         inputId = 'hFunSys_item_pc',
+                         label = 'Function System:',
+                         choices = unique(as.vector(per_hour['FunSys_item'])),
+                         selected = '01',
+                         multiple = FALSE,
+                         selectize = FALSE)
+                       ),
                        # selectInput(
                        #   inputId = 'hUnit_pc',
                        #   label = 'Unit:',
@@ -400,7 +393,7 @@ server <- shinyServer(function(input, output, session) {
     updateSelectizeInput(session = session, 
                          inputId = 'hinterval_pc', 
                          choices = c('Every 5 mins'='per_5min.csv',
-                                     'Every hour'='p.csv',
+                                     'Every hour'='per_hour.csv',
                                      'Every day'='per_day.csv'
                          ),
                          select = 'per_hour.csv')
@@ -524,10 +517,10 @@ server <- shinyServer(function(input, output, session) {
     updateSelectizeInput(session = session, 
                          inputId = 'hinterval', 
                          choices = c('Every 5 mins'='five_min.csv',
-                                     'Every hour'='per_hour.csv',
+                                     'Every hour'='hourly.csv',
                                      'Every day'='daily.csv'
                                      ),
-                         select = 'per_hour.csv')
+                         select = 'hourly.csv')
     })
   
   # Plotting
