@@ -22,7 +22,9 @@ packages <- c('shiny',
               'DataCombine',
               'ggQC',
               'xts',
-              'lubridate')
+              'lubridate',
+              'tibbletime',
+              'anomalize')
 
 for (p in packages) {
   if(!require(p, character.only = T)) {
@@ -53,7 +55,7 @@ ui <- dashboardPage(
     ##############################################
     # Header-start                               #
     ##############################################
-    dashboardHeader(titlePanel(title=div(img(height = 75, width = 1850, src="g11_title_block.jpeg"))),
+    dashboardHeader(titlePanel(title=div(img(height = 75, width = 1850, src="g11_title_block.png"))),
                     color = 'black', inverted = TRUE
                     ),
     ##############################################
@@ -269,7 +271,7 @@ ui <- dashboardPage(
             column(3,
                    box(
                      splitLayout(
-                       cellArgs = list(style = "padding-left:0px;padding-bottom:9px;"),
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:3px;"),
                        selectInput(
                          inputId = 'cinterval', 
                          label = 'Interval:', 
@@ -280,44 +282,54 @@ ui <- dashboardPage(
                          )
                        ),
                      splitLayout(
-                       cellArgs = list(style = "padding-left:0px;padding-bottom:9px;"),
-                       selectInput(
-                         inputId = 'cID', 
-                         label = 'Sensor ID:', 
-                         choices = unique(as.vector(hourly['ID'])), 
-                         selected = 'MBD21CY001_XQ60', #'10CT001_XQ60',
-                         multiple = FALSE, 
-                         selectize = FALSE,
-                         width = '180px'
-                         )
-                       ),
-                     splitLayout(
-                       cellArgs = list(style = "padding-left:0px;padding-bottom:1px;"),
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:3px;"),
                        radioButtons(
                          inputId = "qcVioNo", 
                          label = " Violation Sigma:",
                          inline = TRUE,
                          selected = "1",
-                         c("nil"="1", "1" = "2", "2" = "3", "3" = "4")
+                         c("within"="1", "1" = "2", "2" = "3", "3" = "4") #
                          )
                        ),
+                     splitLayout(
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:3px;"),
+                       radioButtons(
+                         inputId = "alphaNum", 
+                         label = " Anomaly lvl:",
+                         inline = TRUE,
+                         selected = "0.025",
+                         c("1"="0.025","2" = "0.05", "3" = "0.1", "4" = "0.2")
+                       )
+                     ),
                      width = 16,
-                     title = "Select Interval / ID / Sigma",
+                     title = "Select Frequency/ Sigma",
                      color = "teal", ribbon = TRUE, title_side = "top left"
                      )
                    ),
             column(6,
                    box(
                      splitLayout(
-                       cellArgs = list(style = "padding-left:45px;padding-bottom:15px;"),
-                       sliderInput("csliderDate", 'Range of Period 1:',
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:2px;"),
+                       selectInput(
+                         inputId = 'cID', 
+                         label = 'Sensor ID 1:', 
+                         choices = unique(as.vector(hourly['ID'])), 
+                         selected = 'MBD21CY001_XQ60', #'10CT001_XQ60',
+                         multiple = FALSE, 
+                         selectize = FALSE,
+                         width = '180px'
+                       )
+                     ),
+                     splitLayout(
+                       cellArgs = list(style = "padding-left:45px;padding-bottom:10px;"),
+                       sliderInput("csliderDate", 'Range of Period (ID1):',
                                    mindate, 
                                    maxdate, 
                                    c(mindate, maxdate),
                                    step = 300)
                        ),
                      splitLayout(
-                       cellArgs = list(style = "padding:0px;padding-bottom:0px;"),
+                       cellArgs = list(style = "padding:0px;padding-bottom:2px;"),
                        selectInput(
                          inputId="cinputDate_start", 
                          label = HTML("Exclude period from:"), 
@@ -337,22 +349,34 @@ ui <- dashboardPage(
                          width = '180px')
                        ),
                      width = 16,
-                     title = "Period 1",
+                     title = "ID 1",
                      color = "teal", ribbon = TRUE, title_side = "top left"
                      )
                    ),
             column(6,
                    box(
                      splitLayout(
-                       cellArgs = list(style = "padding-left:45px;padding-bottom:15px;"),
-                       sliderInput("csliderDate2", 'Range of Period 2:',
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:2px;"),
+                       selectInput(
+                         inputId = 'cID2', 
+                         label = 'Sensor ID 2:', 
+                         choices = unique(as.vector(hourly['ID'])), 
+                         selected = 'MBD21CY001_XQ60', #'10CT001_XQ60',
+                         multiple = FALSE, 
+                         selectize = FALSE,
+                         width = '180px'
+                       )
+                     ),
+                     splitLayout(
+                       cellArgs = list(style = "padding-left:45px;padding-bottom:10px;"),
+                       sliderInput("csliderDate2", 'Range of Period (ID2):',
                                    mindate, 
                                    maxdate, 
                                    c(mindate, maxdate),
                                    step = 300)
                        ),
                      splitLayout(
-                       cellArgs = list(style = "padding:0px;padding-bottom:0px;"),
+                       cellArgs = list(style = "padding:0px;padding-bottom:2px;"),
                        selectInput(
                          inputId="cinputDate_start2", 
                          label = HTML("Exclude period from:"), 
@@ -372,19 +396,21 @@ ui <- dashboardPage(
                          width=200)
                        ),
                      width = 16,
-                     title = "Period 2",
+                     title = "ID 2",
                      color = "teal", ribbon = TRUE, title_side = "top left"
                      )
                    ),
             column(width = 8,
                    plotlyOutput("mR", height=350),
                    plotlyOutput("mmR", height=200),
-                   plotlyOutput("QCvio",height = 350)
+                   plotlyOutput("QCvio",height = 300),
+                   plotlyOutput("Anom",height = 300)
                    ),
             column(width = 8,
                    plotlyOutput("mR2", height=350),
                    plotlyOutput("mmR2", height=200),
-                   plotlyOutput("QCvio2",height = 350)
+                   plotlyOutput("QCvio2",height = 300),
+                   plotlyOutput("Anom2",height = 300)
                    )
             )
           )
@@ -441,9 +467,6 @@ server <- shinyServer(function(input, output, session) {
       type = 'parcoords',
       frame = "Null",
       dimensions = list(
-        list(range = c(min(data$X1),max(data$X1)),
-             label = 'Date',
-             values=data$X1),
         list(range = c(min(data$H11),max(data$H11)),
              label = '11H', 
              values = data$H11),
@@ -1045,15 +1068,61 @@ server <- shinyServer(function(input, output, session) {
     
     p <- input$qcVioNo
     QC_Violations <- ggplot(cdata, aes(x = date, y = Value)) + 
-      stat_qc_violations(method = "XmR", point.size = 1.0, show.facets = c(1:p))
+      stat_qc_violations(method = "XmR", point.size = 1.0, show.facets = c(p:p))
     
     ggplotly(QC_Violations)
     
   })
   
   
+  output$Anom <- renderPlotly({
+    cdata <- read_csv(sprintf("data/%s",input$cinterval))
+    cdata <- as.data.frame(cdata)
+    
+    # Select by FunSys_item and Unit
+    cdata <- cdata[cdata$ID==input$cID,] #change to cID2
+    # create grouping columns
+    #cdata$Mth  = month(cdata$date)
+    #cdata$Day  = day(cdata$date)
+    #cdata$Hr  = hour(cdata$date)
+    #cdata$dy <- as.Date(cdata$date)  
+    
+    # Select required columns for renaming
+    cdata <- select(cdata,date,ID,Value)%>% #dy,Mth,Day,Hr,FunSys_item, MsureGr, MsureGr_lvl
+      rename( package =ID, count =Value)
+    
+    # Aggregate time
+    cincl_start <- input$csliderDate[1]
+    cincl_end <- input$csliderDate[2]
+    cexcl_start <- input$cinputDate_start
+    cexcl_end <- input$cinputDate_end
+    ## check input for exclude dates
+    if(input$cinputDate_start == 'NULL' | input$cinputDate_end == 'NULL') {
+      cdata <- cdata[cdata$date > cincl_start & cdata$date <= cincl_end,]
+    }
+    else{
+      cdata <- cdata[cdata$date > cincl_start & cdata$date <= cincl_end,]
+      cdata <- cdata[!(cdata$date > cexcl_start & cdata$date <= cexcl_end),]
+    }
+    
+    cdata <- tbl_df(cdata) #need to change to tbl_df for time_decompose
+    
+    alphaNum <- input$alphaNum #set alpha lvl
+    
+    anomalized <- cdata %>%
+      time_decompose(count, method = "stl", frequency = "auto", trend = "auto") %>%
+      anomalize(remainder, method = "iqr", alpha = as.numeric(alphaNum), max_anoms = 0.2) %>%
+      time_recompose() %>%
+      plot_anomalies(time_recomposed = TRUE, alpha_dots = 0.5, alpha_ribbon = 0.5,size_dots = 1.5,size_circles = 1.5)
+    #+ggtitle("Anomaly - IQR")
+    a<-anomalized+theme(legend.position="none")#+theme(legend.title = element_blank())
+    
+    ggplotly(a)
+  })  
   
-  # Period 2
+  
+  
+  ##### Period 2
   
   output$mR2 <- renderPlotly({
     
@@ -1061,7 +1130,7 @@ server <- shinyServer(function(input, output, session) {
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
-    cdata <- cdata[cdata$ID==input$cID,]
+    cdata <- cdata[cdata$ID==input$cID2,] #change to cID2
     
     # create grouping columns
     cdata$Mth  = month(cdata$date)
@@ -1126,7 +1195,7 @@ server <- shinyServer(function(input, output, session) {
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
-    cdata <- cdata[cdata$ID==input$cID,]
+    cdata <- cdata[cdata$ID==input$cID2,] #change to cID2
     
     # create grouping columns
     cdata$Mth  = month(cdata$date)
@@ -1180,7 +1249,7 @@ server <- shinyServer(function(input, output, session) {
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
-    cdata <- cdata[cdata$ID==input$cID,]
+    cdata <- cdata[cdata$ID==input$cID2,] #change to cID2
     
     # create grouping columns
     cdata$Mth  = month(cdata$date)
@@ -1208,13 +1277,61 @@ server <- shinyServer(function(input, output, session) {
     p <- input$qcVioNo
     
     QC_Violations2 <- ggplot(cdata2, aes(x = date, y = Value)) + 
-      stat_qc_violations(method = "XmR", point.size = 1.0, show.facets = c(1:p))    
+      stat_qc_violations(method = "XmR", point.size = 1.0, show.facets = c(p:p))    
     
     ggplotly(QC_Violations2)
-    
   })
   
-})
+
+  output$Anom2 <- renderPlotly({
+    cdata <- read_csv(sprintf("data/%s",input$cinterval))
+    cdata <- as.data.frame(cdata)
+    
+    # Select by FunSys_item and Unit
+    cdata <- cdata[cdata$ID==input$cID2,] #change to cID2
+    
+    # create grouping columns
+    #cdata$Mth  = month(cdata$date)
+    #cdata$Day  = day(cdata$date)
+    #cdata$Hr  = hour(cdata$date)
+    #cdata$dy <- as.Date(cdata$date)  
+    
+    # Select required columns for renaming
+    cdata2 <- select(cdata,date,ID,Value)%>% #dy,Mth,Day,Hr,FunSys_item, MsureGr, MsureGr_lvl
+          rename( package =ID, count =Value)
+    
+    # Aggregate time
+    cincl_start2 <- input$csliderDate2[1]
+    cincl_end2 <- input$csliderDate2[2]
+    cexcl_start2 <- input$cinputDate_start2
+    cexcl_end2 <- input$cinputDate_end2
+    ## check input for exclude dates
+    if(input$cinputDate_start2 == 'NULL' | input$cinputDate_end2 == 'NULL') {
+      cdata2 <- cdata2[cdata2$date > cincl_start2 & cdata2$date <= cincl_end2,]
+    }
+    else{
+      cdata2 <- cdata2[cdata2$date > cincl_start2 & cdata2$date <= cincl_end2,]
+      cdata2 <- cdata2[!(cdata2$date > cexcl_start2 & cdata2$date <= cexcl_end2),]
+    }
+    
+    cdata2 <- tbl_df(cdata2) #need to change to tbl_df for time_decompose
+    
+    alphaNum <- input$alphaNum #set alpha lvl
+    
+    anomalized2 <- cdata2 %>%
+      time_decompose(count, method = "stl", frequency = "auto", trend = "auto") %>%
+      anomalize(remainder, method = "iqr", alpha = as.numeric(alphaNum), max_anoms = 0.2) %>%
+      time_recompose() %>%
+      plot_anomalies(time_recomposed = TRUE, alpha_dots = 0.5, alpha_ribbon = 0.5,size_dots = 1.5,size_circles = 1.5)
+      #+ggtitle("Anomaly - IQR")
+    a2<-anomalized2+theme(legend.position="none")#+theme(legend.title = element_blank())
+    
+    ggplotly(a2)
+  })  
+  
+  
+  
+}) # end for shinyServer(
 
 shinyApp(ui, server)
 
