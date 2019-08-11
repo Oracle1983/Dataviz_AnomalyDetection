@@ -457,7 +457,7 @@ server <- shinyServer(function(input, output, session) {
   
   output$parallelplot <- renderPlotly({
     # Dynamic load data
-    data  <- read_csv(sprintf("data/%s",input$hinterval_pc))
+    data  <- read_csv(sprintf("data/%s",input$hinterval_pc), locale=locale(tz="Singapore"))
     
     # Aggregate time
     incl_start <- input$hsliderDate_pc[1]
@@ -583,7 +583,7 @@ server <- shinyServer(function(input, output, session) {
   })
   
   hdata <- reactive ({
-    hdata_temp <- read_csv(sprintf("data/%s",input$hinterval))
+    hdata_temp <- read_csv(sprintf("data/%s",input$hinterval), locale=locale(tz="Singapore"))
     hdata_temp <- as.data.frame(hdata_temp)
     
     # Select by FunSys_item and MsureGr
@@ -647,7 +647,7 @@ server <- shinyServer(function(input, output, session) {
   })
   
   hdata2 <- reactive ({
-    hdata_temp <- read_csv(sprintf("data/%s",input$hinterval))
+    hdata_temp <- read_csv(sprintf("data/%s",input$hinterval), locale=locale(tz="Singapore"))
     hdata_temp <- as.data.frame(hdata_temp)
     
     # Select by FunSys_item and MsureGr
@@ -802,7 +802,7 @@ server <- shinyServer(function(input, output, session) {
   ## Period 1
   output$mR <- renderPlotly({
     
-    cdata <- read_csv(sprintf("data/%s",input$cinterval))
+    cdata <- read_csv(sprintf("data/%s",input$cinterval), locale=locale(tz="Singapore"))
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
@@ -861,7 +861,7 @@ server <- shinyServer(function(input, output, session) {
   
   output$mmR <- renderPlotly({
     
-    cdata <- read_csv(sprintf("data/%s",input$cinterval))
+    cdata <- read_csv(sprintf("data/%s",input$cinterval), locale=locale(tz="Singapore"))
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
@@ -914,7 +914,7 @@ server <- shinyServer(function(input, output, session) {
   
   
   output$QCvio <- renderPlotly({
-    cdata <- read_csv(sprintf("data/%s",input$cinterval))
+    cdata <- read_csv(sprintf("data/%s",input$cinterval), locale=locale(tz="Singapore"))
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
@@ -954,7 +954,7 @@ server <- shinyServer(function(input, output, session) {
   
   
   output$Anom <- renderPlotly({
-    cdata <- read_csv(sprintf("data/%s",input$cinterval))
+    cdata <- read_csv(sprintf("data/%s",input$cinterval), locale=locale(tz="Singapore"))
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
@@ -1001,7 +1001,7 @@ server <- shinyServer(function(input, output, session) {
   
   output$mR2 <- renderPlotly({
     
-    cdata <- read_csv(sprintf("data/%s",input$cinterval))
+    cdata <- read_csv(sprintf("data/%s",input$cinterval), locale=locale(tz="Singapore"))
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
@@ -1061,7 +1061,7 @@ server <- shinyServer(function(input, output, session) {
   
   output$mmR2 <- renderPlotly({
     
-    cdata <- read_csv(sprintf("data/%s",input$cinterval))
+    cdata <- read_csv(sprintf("data/%s",input$cinterval), locale=locale(tz="Singapore"))
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
@@ -1114,7 +1114,7 @@ server <- shinyServer(function(input, output, session) {
   
   
   output$QCvio2 <- renderPlotly({
-    cdata <- read_csv(sprintf("data/%s",input$cinterval))
+    cdata <- read_csv(sprintf("data/%s",input$cinterval), locale=locale(tz="Singapore"))
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
@@ -1153,7 +1153,7 @@ server <- shinyServer(function(input, output, session) {
   
 
   output$Anom2 <- renderPlotly({
-    cdata <- read_csv(sprintf("data/%s",input$cinterval))
+    cdata <- read_csv(sprintf("data/%s",input$cinterval), locale=locale(tz="Singapore"))
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
