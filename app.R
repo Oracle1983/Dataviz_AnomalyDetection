@@ -10,6 +10,10 @@
 #'ggQC' => For stat_QC() function to produce QC charts with gpplot framework
 #'xts => For as.xts() function to convert xts objects into environments for horizon graph
 #'lubridate' => For functions to work with date-times especially extraction of components of months, days, hours, etc.
+#'tibbletime' =>
+#'anomalize' =>
+#'DT' => For DataTables function to display R data objects (matrices or data frames) as tables.
+#'data.table' => For transform function to perform data.table transformation.
 #
 # ########################################################################################################################
 
@@ -24,7 +28,9 @@ packages <- c('shiny',
               'xts',
               'lubridate',
               'tibbletime',
-              'anomalize')
+              'anomalize',
+              'DT',
+              'data.table')
 
 for (p in packages) {
   if(!require(p, character.only = T)) {
@@ -35,16 +41,20 @@ for (p in packages) {
 
 options(shiny.maxRequestSize = 30*1024^2)
 
+
 # Load processed data (for choices under selectInput)
-hourly <- read_csv("./data/hourly.csv")
-per_hour <- read_csv("./data/per_hour.csv")
+hourly <- read_csv("./data/hourly.csv", locale=locale(tz="Singapore"))
+per_hour <- read_csv("./data/per_hour.csv", locale=locale(tz="Singapore"))
 
 
 # Extract time range (for min and max under sliderInput)
-#mindate = as.Date("2007-07-01 00:00:00","%Y-%m-%d %H:%M:%S")
-#maxdate = as.Date("2007-08-01 00:00:00","%Y-%m-%d %H:%M:%S")
+#mindate = as.POSIXct("2007-07-01 00:00:00","%Y-%m-%d %H:%M:%S", tz="Singapore")
+#maxdate = as.POSIXct("2007-08-01 00:00:00","%Y-%m-%d %H:%M:%S")
+#mindate = min(as.POSIXct(hourly$date,"%Y-%m-%d %H:%M:%S", tz="Singapore"), na.rm = TRUE)
 mindate = min(hourly$date, na.rm = TRUE)
 maxdate = max(hourly$date, na.rm = TRUE)
+initial <- mindate+9.5*86400 # 86400 secs
+
 
 horizonOutput <- function(outputId, width = '400%', height = '400px'){
   htmlwidgets::shinyWidgetOutput(outputId, 'horizon', width, height, package = 'horizon')
@@ -95,7 +105,7 @@ ui <- dashboardPage(
             column(3,
                    box(
                      splitLayout(
-                       cellArgs = list(style = "padding-left:0px;padding-bottom:67px;"),
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:0px;"),
                        selectInput(
                          inputId = 'hFunSys_item_pc',
                          label = 'Function System:',
@@ -171,7 +181,7 @@ ui <- dashboardPage(
         tabItem(
           tabName = "horizongraph",
           fluidRow(
-            column(3,
+            column(3,align="left",
                    box(
                      splitLayout(
                        cellArgs = list(style = "padding-left:0px;padding-bottom:0px;"),
@@ -182,17 +192,17 @@ ui <- dashboardPage(
                          selected = '40',
                          multiple = FALSE, 
                          selectize = FALSE)
-                       ),
-                     splitLayout(
-                       cellArgs = list(style = "padding-left:0px;padding-bottom:0px;"),
-                       selectInput(
-                         inputId = 'hMsureGr', 
-                         label = 'MsureGr:', 
-                         choices = unique(as.vector(hourly['MsureGr'])), 
-                         selected = 'T AFT HPCLR',
-                         multiple = FALSE, 
-                         selectize = FALSE)
-                       ),
+                     ),
+                     # splitLayout(
+                     #   cellArgs = list(style = "padding-left:0px;padding-bottom:0px;"),
+                     #   selectInput(
+                     #     inputId = 'hMsureGr', 
+                     #     label = 'MsureGr:', 
+                     #     choices = unique(as.vector(hourly['MsureGr'])), 
+                     #     selected = 'P AIR DESP',
+                     #     multiple = FALSE, 
+                     #     selectize = FALSE)
+                     #   ),
                      width = 3,
                      title = "Selection of Sensor Groups",
                      color = "teal", ribbon = TRUE, title_side = "top left"
@@ -206,12 +216,12 @@ ui <- dashboardPage(
                        sliderInput("hsliderDate", 'Range of dates:',
                                    mindate, 
                                    maxdate, 
-                                   c(mindate, maxdate),
+                                   c(initial, maxdate),
                                    step = 300),
                        sliderInput("hsliderScale", 'Horizon Color Scale:',
                                    min = 0, 
                                    max = 5, 
-                                   value = 0.1, 
+                                   value = 3, 
                                    step = 0.1)
                      ),
                      splitLayout(
@@ -235,29 +245,37 @@ ui <- dashboardPage(
                          width=200),
                        
                        selectInput(
-                         inputId = 'hinterval', 
-                         label = 'Time Interval:', 
+                         inputId = 'hrange', 
+                         label = 'Day Window:', 
+                         choices = c('3 day'=3, 
+                                     '5 days'=5,
+                                     '7 days'=7,
+                                     '14 days'=14),
+                         selected = 5,
+                         multiple = FALSE, 
+                         selectize = FALSE),
+                       
+                       selectInput(
+                         inputId = 'hinterval',
+                         label = 'Time aggregation:', 
                          choices = '*',
                          multiple = FALSE, 
-                         selectize = FALSE,
-                         width=100)
+                         selectize = FALSE)
                      ),
                      width = 12,
                      title = "Other Settings",
                      color = "teal", ribbon = TRUE, title_side = "top left"
                    )
             ),
-            #column(width = 10,
-            #       horizonOutput("horizonplot", height=350)
-            
-            #),
-            column(width = 15,
-                   plotOutput("horizonplot2", height=650)
-                   
-            #),
-            #column(width = 16,
-            #       plotOutput("horizonplot3", height=650)
-                   
+            column(width = 12,
+                   h5("Percentage of Changes per Sensor ID"),
+                   plotOutput("horizonplot", height=650)
+            ),
+            column(width = 4, 
+                   h5("Sensor ID with Highest Percentage Change"),
+                   DT::dataTableOutput("htable_high"),
+                   h5("Sensor ID with Persistent Trend"),
+                   DT::dataTableOutput("htable_count")
             )
           )
         ),
@@ -268,10 +286,10 @@ ui <- dashboardPage(
           tabName = "controlchart",
           #h1("Control Chart - Moving Range"),
           fluidRow(
-            column(3,
+            column(2,
                    box(
                      splitLayout(
-                       cellArgs = list(style = "padding-left:0px;padding-bottom:3px;"),
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:5px;"),
                        selectInput(
                          inputId = 'cinterval', 
                          label = 'Interval:', 
@@ -282,47 +300,47 @@ ui <- dashboardPage(
                          )
                        ),
                      splitLayout(
-                       cellArgs = list(style = "padding-left:0px;padding-bottom:3px;"),
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:5px;"),
                        radioButtons(
                          inputId = "qcVioNo", 
-                         label = " Violation Sigma:",
+                         label = "Sigma:",
                          inline = TRUE,
-                         selected = "1",
-                         c("within"="1", "1" = "2", "2" = "3", "3" = "4") #
+                         selected = "3",
+                         c("1" = "2", "2" = "3", "3" = "4") #"0"="1", 
                          )
                        ),
                      splitLayout(
-                       cellArgs = list(style = "padding-left:0px;padding-bottom:3px;"),
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:5px;"),
                        radioButtons(
                          inputId = "alphaNum", 
-                         label = " Anomaly lvl:",
+                         label = " Anomaly:",
                          inline = TRUE,
-                         selected = "0.025",
-                         c("1"="0.025","2" = "0.05", "3" = "0.1", "4" = "0.2")
+                         selected = "0.1",
+                         c("1"="0.05","2" = "0.1", "3" = "0.2") #, "4" = "0.2"
                        )
                      ),
                      width = 16,
-                     title = "Select Frequency/ Sigma",
+                     title = "Select Levels",
                      color = "teal", ribbon = TRUE, title_side = "top left"
                      )
                    ),
-            column(6,
+            column(7,
                    box(
                      splitLayout(
-                       cellArgs = list(style = "padding-left:0px;padding-bottom:2px;"),
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:3px;"),
                        selectInput(
                          inputId = 'cID', 
-                         label = 'Sensor ID 1:', 
+                         label = 'Sensor :', 
                          choices = unique(as.vector(hourly['ID'])), 
-                         selected = 'MBD21CY001_XQ60', #'10CT001_XQ60',
+                         selected = 'MBH40CT021_XQ60',
                          multiple = FALSE, 
                          selectize = FALSE,
                          width = '180px'
                        )
                      ),
                      splitLayout(
-                       cellArgs = list(style = "padding-left:45px;padding-bottom:10px;"),
-                       sliderInput("csliderDate", 'Range of Period (ID1):',
+                       cellArgs = list(style = "padding-left:45px;padding-bottom:5px;"),
+                       sliderInput("csliderDate", 'Period Range :',
                                    mindate, 
                                    maxdate, 
                                    c(mindate, maxdate),
@@ -334,7 +352,7 @@ ui <- dashboardPage(
                          inputId="cinputDate_start", 
                          label = HTML("Exclude period from:"), 
                          choices = c('select...'='NULL',unique(as.vector(hourly['date']))),
-                         selected = NULL,
+                         selected = "2007-07-07 01:00:00",
                          multiple = FALSE, 
                          selectize = FALSE,
                          width = '180px'),
@@ -343,33 +361,33 @@ ui <- dashboardPage(
                          inputId="cinputDate_end", 
                          label = HTML("to:"), 
                          choices = c('select...'='NULL',unique(as.vector(hourly['date']))),
-                         selected = NULL,
+                         selected = "2007-07-10 23:00:00",
                          multiple = FALSE, 
                          selectize = FALSE,
                          width = '180px')
                        ),
                      width = 16,
-                     title = "ID 1",
+                     title = "Select ID & Period (1)",
                      color = "teal", ribbon = TRUE, title_side = "top left"
                      )
                    ),
-            column(6,
+            column(7,
                    box(
                      splitLayout(
-                       cellArgs = list(style = "padding-left:0px;padding-bottom:2px;"),
+                       cellArgs = list(style = "padding-left:0px;padding-bottom:3px;"),
                        selectInput(
                          inputId = 'cID2', 
-                         label = 'Sensor ID 2:', 
+                         label = 'Sensor :', 
                          choices = unique(as.vector(hourly['ID'])), 
-                         selected = 'MBD21CY001_XQ60', #'10CT001_XQ60',
+                         selected = 'MBH40CT021_XQ60',
                          multiple = FALSE, 
                          selectize = FALSE,
                          width = '180px'
                        )
                      ),
                      splitLayout(
-                       cellArgs = list(style = "padding-left:45px;padding-bottom:10px;"),
-                       sliderInput("csliderDate2", 'Range of Period (ID2):',
+                       cellArgs = list(style = "padding-left:45px;padding-bottom:5px;"),
+                       sliderInput("csliderDate2", 'Period Range :',
                                    mindate, 
                                    maxdate, 
                                    c(mindate, maxdate),
@@ -381,7 +399,7 @@ ui <- dashboardPage(
                          inputId="cinputDate_start2", 
                          label = HTML("Exclude period from:"), 
                          choices = c('select...'='NULL',unique(as.vector(hourly['date']))),
-                         selected = NULL,
+                         selected = "2007-07-23 10:00:00",
                          multiple = FALSE, 
                          selectize = FALSE,
                          width=200),
@@ -390,27 +408,27 @@ ui <- dashboardPage(
                          inputId="cinputDate_end2", 
                          label = HTML("to:"), 
                          choices = c('select...'='NULL',unique(as.vector(hourly['date']))),
-                         selected = NULL,
+                         selected = "2007-07-24 15:00:00",
                          multiple = FALSE, 
                          selectize = FALSE,
                          width=200)
                        ),
                      width = 16,
-                     title = "ID 2",
+                     title = "Select ID & Period (2)",
                      color = "teal", ribbon = TRUE, title_side = "top left"
                      )
                    ),
             column(width = 8,
-                   plotlyOutput("mR", height=350),
-                   plotlyOutput("mmR", height=200),
-                   plotlyOutput("QCvio",height = 300),
-                   plotlyOutput("Anom",height = 300)
+                   plotlyOutput("mR", height = 200),
+                   plotlyOutput("mmR", height = 100),
+                   plotlyOutput("QCvio",height = 200),
+                   plotlyOutput("Anom",height = 200)
                    ),
             column(width = 8,
-                   plotlyOutput("mR2", height=350),
-                   plotlyOutput("mmR2", height=200),
-                   plotlyOutput("QCvio2",height = 300),
-                   plotlyOutput("Anom2",height = 300)
+                   plotlyOutput("mR2", height = 200),
+                   plotlyOutput("mmR2", height = 100),
+                   plotlyOutput("QCvio2",height = 200),
+                   plotlyOutput("Anom2",height = 200)
                    )
             )
           )
@@ -549,56 +567,52 @@ server <- shinyServer(function(input, output, session) {
   #################################################################
   # [Horizon graph]                                               #
   #################################################################
-  # Select time interval
   observe({
-    #files <- list.files(path='data/')
+    # Select time aggregation
     updateSelectizeInput(session = session, 
                          inputId = 'hinterval', 
                          choices = c('Every 5 mins'='five_min.csv',
                                      'Every hour'='hourly.csv',
-                                     'Every day'='daily.csv'
-                                     ),
+                                     'Every day'='daily.csv'),
                          select = 'hourly.csv')
-    })
-  
-  # Plotting
-  
-  renderHorizon <- function(expr, env = parent.frame(), quoted = FALSE) {
-    if (!quoted) { expr <- substitute(expr) } # force quoted
-    htmlwidgets::shinyRenderWidget(expr, horizonOutput, env, quoted = TRUE)
-  }
-  
-  output$horizonplot <- renderHorizon({
     
-    hdata <- read_csv(sprintf("data/%s",input$hinterval))
-    hdata <- as.data.frame(hdata)
+    # Select day window
+    val <- as.numeric(input$hrange)
+    updateSliderInput(session, "hsliderDate", value = c(initial, initial+(val*86400)),
+                      min = mindate, max = maxdate, step = 300)
+  })
+  
+  hdata <- reactive ({
+    hdata_temp <- read_csv(sprintf("data/%s",input$hinterval))
+    hdata_temp <- as.data.frame(hdata_temp)
     
     # Select by FunSys_item and MsureGr
-    hdata <- hdata[hdata$MsureGr==input$hMsureGr,]
-    hdata <- hdata[hdata$FunSys_item==input$hFunSys_item,]
+    #hdata <- hdata[hdata$MsureGr==input$hMsureGr,]
+    hdata_temp <- hdata_temp[hdata_temp$FunSys_item==input$hFunSys_item,]
     
     # Select required columns
-    hdata <- select(hdata, date, ID, Value)
+    hdata_temp <- select(hdata_temp, date, ID, Value)
     
     # Replace null under Value column with zero
     #hdata$Value[is.na(hdata$Value)] <- 0
     
     # Calculate percentage of changes
-    hdata <- change(hdata, Var = 'Value', GroupVar = 'ID',
-                    type = 'percent',
-                    NewVar = 'PercentChange',
-                    slideBy = -1)
+    hdata_temp <- change(hdata_temp, Var = 'Value', GroupVar = 'ID',
+                         type = 'percent',
+                         NewVar = 'PercentChange',
+                         slideBy = -1)
     
     # Spreads into multiple columns
     ## assign row_number (remove Value if percentage of changes exist)
-    hdata <- hdata %>% 
+    hdata_temp <- hdata_temp %>% 
       group_by(ID) %>% 
       mutate(grouped_id = row_number()) %>%
       select(-Value)
     ## spread and remove grouped_id
-    hdata <- hdata %>% 
+    hdata_temp <- hdata_temp %>% 
       spread(ID, PercentChange) %>% 
       select(-grouped_id)
+    
     
     # Aggregate time
     incl_start <- input$hsliderDate[1]
@@ -607,121 +621,50 @@ server <- shinyServer(function(input, output, session) {
     excl_end <- input$hinputDate_end
     ## check input for exclude dates
     if(input$hinputDate_start == 'NULL' | input$hinputDate_end == 'NULL') {
-      hdata <- hdata[hdata$date > incl_start & hdata$date <= incl_end,]
+      hdata_temp <- hdata_temp[hdata_temp$date > incl_start & hdata_temp$date <= incl_end,]
     }
     else{
-      hdata <- hdata[hdata$date > incl_start & hdata$date <= incl_end,]
-      hdata <- hdata[!(hdata$date > excl_start & hdata$date <= excl_end),]
+      hdata_temp <- hdata_temp[hdata_temp$date > incl_start & hdata_temp$date <= incl_end,]
+      hdata_temp <- hdata_temp[!(hdata_temp$date > excl_start & hdata_temp$date <= excl_end),]
     }
+    
+    # Add empty top rows
+    #for (i in 1:216){
+    #  hdata_temp <- hdata_temp[c(1,seq(nrow(hdata_temp))),]
+    #  hdata_temp[1,1] <- hdata_temp[1,1]-(hdata_temp[3,1]-hdata_temp[2,1])
+    #  hdata_temp[1,-1] <- NA
+    #}
     
     # Moving average
     #n=3
-    #df07_2s <- df07_2s %>% 
+    #hdata <- hdata %>% 
     #  mutate_all(funs(rollapplyr(., FUN = mean, width = n, fill = NA, partial = TRUE)))
     
     # Convert dataframe to xts
-    #hdata <- as.xts(hdata[,-1], order.by=as.POSIXct(hdata$date,format='%Y-%m-%d %H:%M:%S'))
+    hdata_temp <- as.xts(hdata_temp[,-1], order.by=as.POSIXct(hdata_temp$date,format='%Y-%m-%d %H:%M:%S'))
     
-    # Plot horizon chart
-    horizon <- function(dates, df, date_format = "%Y-%m-%d",
-                        digits = NULL, width = NULL, height = NULL,
-                        axis_height = 30, axis_ticks=4, padding=15,
-                        colors=NULL, tick_format=NULL, focus_format=NULL)
-    {
-      lab <- colnames(df)
-      if(is.null(lab))
-        lab <- paste0("col", 1:ncol(df))
-      
-      if(!is.data.frame(df))
-        df <- as.data.frame(df)
-      
-      stopifnot(length(dates) == nrow(df))
-      
-      df <- as.list(df)
-      names(df) <- NULL
-      
-      if(is.null(colors))
-        colors <- c("#08519c", "#3182bd", "#6baed6", "#bdd7e7",
-                    "#bae4b3", "#74c476", "#31a354", "#006d2c")
-      if(length(colors) %% 2 != 0)
-        stop("length(colors) must be even")
-      
-      if(is.null(digits)) {
-        digits <- ceiling(log10(diff(range(unlist(df), na.rm=TRUE))))
-        digits <- 4 - digits
-        digits <- ifelse(digits < 0, 0, digits)
-      }
-      
-      x = list(dates=dates, labels=lab, data=df, date_format=date_format,
-               chartOpts=list(height=height, axis_height=axis_height,
-                              axis_ticks=axis_ticks, colors=colors,
-                              digits=digits, padding=padding,
-                              tick_format=tick_format,
-                              focus_format=focus_format))
-      
-      # create widget
-      htmlwidgets::createWidget(
-        name = 'horizon',
-        x,
-        width = width,
-        height = height,
-        sizingPolicy=htmlwidgets::sizingPolicy(
-          padding=padding,
-          browser.defaultWidth=800,
-          browser.defaultHeight=600,
-          browser.padding = padding,
-          knitr.defaultWidth=800,
-          knitr.defaultHeight=600,
-          viewer.padding = padding),
-        package = 'horizon'
-      )
-    }
-    
-    
-    t<- parse_date_time(hdata$date, "%Y-%m-%d %H:%M:%S" )
-    t<- factor(t, labels=format(hdata$date,"%Y-%m-%d %H:%M:%S"), ordered=TRUE)
-    
-    horizon(t, hdata[,-1], date_format = "%Y-%m-%d %H:%M:%S", digits = 3,
-            width = NULL, height = NULL, axis_height = 30, axis_ticks = 15,
-            padding = 0, 
-            #colors = c("#420000", "#7a0000", "#9c0808", "#bd3131", "#d66b6b", "#e7bdbd",
-            #           "#bdd7e7", "#6baed6", "#3182bd", "#08519c", "#003c7a", "#002142"), 
-            colors = c("#7a0000", "#9c0808", "#bd3131", "#d66b6b", "#e7bdbd",
-                       "#bdd7e7", "#6baed6", "#3182bd", "#08519c", "#003c7a"), 
-            tick_format = "%m-%d", focus_format = "%Y-%m-%d %H:%M:%S")
+    return(hdata_temp)
   })
   
-  output$horizonplot2 <- renderPlot({
-    
-    hdata <- read_csv(sprintf("data/%s",input$hinterval))
-    hdata <- as.data.frame(hdata)
+  hdata2 <- reactive ({
+    hdata_temp <- read_csv(sprintf("data/%s",input$hinterval))
+    hdata_temp <- as.data.frame(hdata_temp)
     
     # Select by FunSys_item and MsureGr
-    hdata <- hdata[hdata$MsureGr==input$hMsureGr,]
-    hdata <- hdata[hdata$FunSys_item==input$hFunSys_item,]
+    #hdata <- hdata[hdata$MsureGr==input$hMsureGr,]
+    hdata_temp <- hdata_temp[hdata_temp$FunSys_item==input$hFunSys_item,]
     
     # Select required columns
-    hdata <- select(hdata, date, ID, Value)
+    hdata_temp <- select(hdata_temp, date, ID, Value)
     
     # Replace null under Value column with zero
     #hdata$Value[is.na(hdata$Value)] <- 0
     
     # Calculate percentage of changes
-    hdata <- change(hdata, Var = 'Value', GroupVar = 'ID',
-                    type = 'percent',
-                    NewVar = 'PercentChange',
-                    slideBy = -1)
-    
-    # Spreads into multiple columns
-     ## assign row_number (remove Value if percentage of changes exist)
-    hdata <- hdata %>% 
-      group_by(ID) %>% 
-      mutate(grouped_id = row_number()) %>%
-      select(-Value)
-     ## spread and remove grouped_id
-    hdata <- hdata %>% 
-      spread(ID, PercentChange) %>% 
-      select(-grouped_id)
+    hdata_temp <- change(hdata_temp, Var = 'Value', GroupVar = 'ID',
+                         type = 'percent',
+                         NewVar = 'PercentChange',
+                         slideBy = -1)
     
     # Aggregate time
     incl_start <- input$hsliderDate[1]
@@ -730,23 +673,23 @@ server <- shinyServer(function(input, output, session) {
     excl_end <- input$hinputDate_end
     ## check input for exclude dates
     if(input$hinputDate_start == 'NULL' | input$hinputDate_end == 'NULL') {
-      hdata <- hdata[hdata$date > incl_start & hdata$date <= incl_end,]
-      }
+      hdata_temp <- hdata_temp[hdata_temp$date > incl_start & hdata_temp$date <= incl_end,]
+    }
     else{
-      hdata <- hdata[hdata$date > incl_start & hdata$date <= incl_end,]
-      hdata <- hdata[!(hdata$date > excl_start & hdata$date <= excl_end),]
-      }
-      
-    # Moving average
-    #n=3
-    #df07_2s <- df07_2s %>% 
-    #  mutate_all(funs(rollapplyr(., FUN = mean, width = n, fill = NA, partial = TRUE)))
+      hdata_temp <- hdata_temp[hdata_temp$date > incl_start & hdata_temp$date <= incl_end,]
+      hdata_temp <- hdata_temp[!(hdata_temp$date > excl_start & hdata_temp$date <= excl_end),]
+    }
     
-    # Convert dataframe to xts
-    hdata <- as.xts(hdata[,-1], order.by=as.POSIXct(hdata$date,format='%Y-%m-%d %H:%M:%S'))
+    hdata_temp <- select(hdata_temp, date, ID, PercentChange)
+    
+    return(hdata_temp)
+  })
+  
+  # Plotting
+  output$horizonplot <- renderPlot({
     
     # Plot horizon chart
-    horizonplot(hdata,
+    horizonplot(hdata(),
                 #specifying scale of each color segment
                 horizonscale = input$hsliderScale,
                 #specifying baseline y value for the first (positive) segment (i.e. the value at which red changes to blue)
@@ -758,150 +701,88 @@ server <- shinyServer(function(input, output, session) {
                   panel.horizonplot(x, ...)
                   #h = 3 (3 horizontal grid lines)
                   #v = 0 (no vertical grid lines)
-                  panel.grid(h=3, v=0,col = "gray70", lwd=1,lty = 3)
+                  panel.grid(h=0, v=0,col = "gray70", lwd=1,lty = 3)
                 },
                 #setting panel border
                 par.settings=theEconomist.theme(box = "gray70"),
                 #setting the strip to left
                 strip.left = FALSE,
                 #setting number of columns and rows
-                layout = c(1,ncol(hdata)),
+                layout = c(1,ncol(hdata())),
                 #setting ticks and axis
                 scales = list(tck = c(1,0), y = list(tck = c(0,1), draw = FALSE, relation = "same", alternating = 2)),
                 #setting labels
                 xlab = NULL,
-                ylab = list(rev(colnames(hdata)), rot = 0, cex = 0.8, pos = 3),
+                ylab = list(rev(colnames(hdata())), rot = 0, cex = 0.8, pos = 3),
                 col.regions=brewer.pal(n=8, 'RdBu'),
                 main = NULL)
   })
-
-  output$horizonplot3 <- renderPlot({
+  
+  output$htable_high = DT::renderDataTable({
+    hdata_high <- hdata2()
+    hdata_high <- hdata_high %>%
+      mutate(Sign = ifelse(PercentChange > 0, "Positive", ifelse(PercentChange < 0, "Negative", "Zero"))) %>%  # get the sign of the value
+      ungroup
+    hdata_high["PercentChange"] <-round(hdata_high["PercentChange"],3)
+    hdata_high["date"] <- format(hdata_high$date, "%Y-%m-%d\n%H:%M:%S")
+    hdata_high <- select(hdata_high, "ID", "date", "Sign", "PercentChange")
     
-    hdata <- read_csv(sprintf("data/%s",input$hinterval))
-    hdata <- as.data.frame(hdata)
+    hdata_pos <- hdata_high[order(as.numeric(as.character(hdata_high$PercentChange)),decreasing = TRUE),]
+    hdata_pos <- hdata_pos[ !duplicated(hdata_pos$ID), ]
     
-    # Select by FunSys_item and MsureGr
-    hdata <- hdata[hdata$MsureGr==input$hMsureGr,]
-    hdata <- hdata[hdata$FunSys_item==input$hFunSys_item,]
+    hdata_neg <- hdata_high[order(as.numeric(as.character(hdata_high$PercentChange)),decreasing = FALSE),]
+    hdata_neg <- hdata_neg[ !duplicated(hdata_neg$ID), ]
     
-    # Select required columns
-    hdata <- select(hdata, date, ID, Value)
+    hdata_table <- rbind(head(hdata_pos, 3), head(hdata_neg, 3))
     
-    # Replace null under Value column with zero
-    #hdata$Value[is.na(hdata$Value)] <- 0
-    
-    # Calculate percentage of changes
-    hdata <- change(hdata, Var = 'Value', GroupVar = 'ID',
-                    type = 'percent',
-                    NewVar = 'PercentChange',
-                    slideBy = -1)
-    
-    # Spreads into multiple columns
-    ## assign row_number (remove Value if percentage of changes exist)
-    hdata <- hdata %>% 
-      group_by(ID) %>% 
-      mutate(grouped_id = row_number()) %>%
-      select(-Value)
-    ## spread and remove grouped_id
-    hdata <- hdata %>% 
-      spread(ID, PercentChange) %>% 
-      select(-grouped_id)
-    
-    # Aggregate time
-    incl_start <- input$hsliderDate[1]
-    incl_end <- input$hsliderDate[2]
-    excl_start <- input$hinputDate_start
-    excl_end <- input$hinputDate_end
-    ## check input for exclude dates
-    if(input$hinputDate_start == 'NULL' | input$hinputDate_end == 'NULL') {
-      hdata <- hdata[hdata$date > incl_start & hdata$date <= incl_end,]
-    }
-    else{
-      hdata <- hdata[hdata$date > incl_start & hdata$date <= incl_end,]
-      hdata <- hdata[!(hdata$date > excl_start & hdata$date <= excl_end),]
-    }
-    
-    # Moving average
-    #n=3
-    #df07_2s <- df07_2s %>% 
-    #  mutate_all(funs(rollapplyr(., FUN = mean, width = n, fill = NA, partial = TRUE)))
-    
-    # Convert dataframe to xts
-    hdata <- as.xts(hdata[,-1], order.by=as.POSIXct(hdata$date,format='%Y-%m-%d %H:%M:%S'))
-    
-    require(RColorBrewer)
-    require(quantmod)
-    require(PerformanceAnalytics)
-    
-    x <- na.omit(hdata)
-    
-    #get some decent colors from RColorBrewer
-    #we will use colors on the edges so 2:4 for red and 7:9 for blue
-    col.brew <- (brewer.pal(name="RdBu",n=11))
-    
-    #get this to ease using it later
-    n<-nrow(x)
-    
-    #set scale to be 10%
-    horizonscale=input$hsliderScale
-    
-    
-    dd = dim(x)
-    
-    #now let's do it with a loop and flip the negative up
-    nbands = ceiling(max(abs(coredata(x)))/horizonscale)
-    
-    
-    layout(matrix(c(1:(dd[2]+2)), ncol = 1, byrow = TRUE))
-    
-    for(j in 1:dd[2]){
-      par(mar=c(0,8,0,8),cex=0.8, col="grey")
-      plot(index(x[,j]),
-           coredata(x[,j]),
-           type="n",
-           #bty="n",
-           las=1,
-           xaxt="n",
-           yaxt="n",
-           xlab=NA,
-           ylab=NA,
-           ylim=c(-horizonscale,horizonscale))
-      par(usr=c(index(x[,j])[1],index(x[,j])[n],0,horizonscale))
-      
-      for (i in 1:nbands) {
-        #draw positive
-        polygon(
-          c(index(x[,j])[1], index(x[,j]), index(x[,j])[n]),
-          c(0, coredata(x[,j]) - (i-1) * horizonscale,0),
-          col=col.brew[length(col.brew)-nbands+i-1],
-          border=NA
-        )
-        #draw negative
-        polygon(
-          c(index(x[,j])[1], index(x[,j]), index(x[,j])[n]),
-          c(0, -coredata(x[,j]) - (i-1) * horizonscale, 0),
-          col=col.brew[nbands-i+1],
-          border=NA
-        )
-        par(las=1,col="grey") 
-        mtext(colnames(x[,j])[i], side = 2, line = 0.2, srt = -90, cex = 0.6, col="black")
-      }
-    }
-    ix <- seq(min(time(x)), max(time(x)), by="1 day")
-    par(mar=c(0,8,0,8),cex=0.8, col="grey")
-    axis(side = 1, at = ix, labels = format(ix, "%b %d"), col="grey")
-    par(mar=c(0,8,3.5,8),cex=0.6, col="grey")
-    
-    image(x = 0:10, y = 1, z = matrix(data = 0:10,), 
-          col=brewer.pal(name="RdBu",n=11),
-          axes=F, 
-          xlab='', 
-          ylab='')
-    axis(1, at=c(0,10), labels = c('Negative %', 'Positive %'))
-    
-    
-    # thanks https://www.r-bloggers.com/horizon-plots-in-base-graphics/
+    DT::datatable(hdata_table,
+                  colnames = c('Sensor ID', 'Timestamp (end)', 'Trend', 'Percent Change(%)'),
+                  options = list(initComplete = JS("function(settings, json) {$(this.api().table().header()).css({'font-size' : '12px'});}"),
+                                 pageLength = 10, 
+                                 dom = 't'),
+                  rownames= FALSE) %>%
+      formatStyle('Sign', 
+                  color = 'white',
+                  backgroundColor = styleEqual(c('Positive', 'Negative'), c('#2166ac', '#b2182b'))) %>%
+      formatStyle(columns = c(1, 2, 3), 
+                  fontSize = '85%') %>%
+      formatStyle(0, target= 'row', lineHeight='70%')
   })
+  
+  output$htable_count = DT::renderDataTable({
+    hdata_count <- hdata2()
+    hdata_count <- hdata_count %>%
+      mutate(Sign = ifelse(PercentChange > 0, "Positive", ifelse(PercentChange < 0, "Negative", "Zero"))) %>%  # get the sign of the value
+      ungroup
+    
+    hdata_count <- hdata_count[order(hdata_count["ID"]), ]
+    hdata_count <- transform(hdata_count, Count = ave(Sign, rleid(ID, Sign), FUN = seq_along))
+    hdata_count["date"] <- format(hdata_count$date, "%Y-%m-%d\n%H:%M:%S")
+    hdata_count <- hdata_count[order(as.numeric(as.character(hdata_count$Count)),decreasing = TRUE),]
+    hdata_count <- select(hdata_count, "ID", "date", "Sign", "Count")
+    
+    hdata_pos <- hdata_count[hdata_count["Sign"] == "Positive",]
+    hdata_pos <- hdata_pos[ !duplicated(hdata_pos$ID), ]
+    
+    hdata_neg <- hdata_count[hdata_count["Sign"] == "Negative",]
+    hdata_neg <- hdata_neg[ !duplicated(hdata_neg$ID), ]
+    
+    hdata_table <- rbind(head(hdata_pos, 3), head(hdata_neg, 3))
+    
+    DT::datatable(hdata_table,
+                  colnames = c('Sensor ID', 'Timestamp (end)', 'Trend', 'Consecutive Count'),
+                  options = list(initComplete = JS("function(settings, json) {$(this.api().table().header()).css({'font-size' : '12px'});}"),
+                                 pageLength = 10, 
+                                 dom = 't'),
+                  rownames= FALSE) %>%
+      formatStyle('Sign', 
+                  color = 'white',
+                  backgroundColor = styleEqual(c('Positive', 'Negative'), c('#2166ac', '#b2182b'))) %>%
+      formatStyle(columns = c(1, 2, 3), 
+                  fontSize = '85%') %>%
+      formatStyle(0, target= 'row', lineHeight='70%')
+  })
+  
   
   #################################################################
   # [Control Chart]                                               #
@@ -911,9 +792,9 @@ server <- shinyServer(function(input, output, session) {
     #files <- list.files(path='data/')
     updateSelectizeInput(session = session, 
                          inputId = 'cinterval', 
-                         choices = c('Every 5 mins'='five_min.csv',
-                                     'Every hour'='hourly.csv',
-                                     'Every day'='daily.csv'
+                         choices = c('5 min'='five_min.csv',
+                                     'Hourly'='hourly.csv',
+                                     'Daily'='daily.csv'
                          ),
                          select = 'hourly.csv')
   })
@@ -928,13 +809,10 @@ server <- shinyServer(function(input, output, session) {
     cdata <- cdata[cdata$ID==input$cID,]
     
     # create grouping columns
-    cdata$Mth  = month(cdata$date)
-    cdata$Day  = day(cdata$date)
-    cdata$Hr  = hour(cdata$date)
-    cdata$dy <- as.Date(cdata$date)  
+    cdata$day <- as.Date(cdata$date) #cdata$Hr  = hour(cdata$date)  
     
     # Select required columns
-    cdata <- select(cdata,date,dy,Mth,Day,Hr,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
+    cdata <- select(cdata,date,day,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
     
     # Aggregate time
     cincl_start <- input$csliderDate[1]
@@ -959,27 +837,23 @@ server <- shinyServer(function(input, output, session) {
     the_UCL <- the_Mean + 3 * the_Sigma
     sd_LCL <- the_Mean - 3* sd(cdata$Value)
     sd_UCL <- the_Mean + 3* sd(cdata$Value)
-    
-    #mR_LCL <- 0
-    #mR_UCL <- 3.267*the_mR
-    
     Rng <- (sd_UCL-sd_LCL)/6
     
     # Plot control chart
-    xBar <- ggplot(cdata, aes(x=date, y = Value)) +
-      geom_point(color="black",alpha=0.9,size=0.8) + geom_line(color="black",alpha=0.7) +
-      #stat_QC(method="mR",auto.label = T)+
-      #stat_mR(auto.label = T)+
-      ggtitle("Period 1")+
+    xBar <- ggplot(cdata, aes(x=date, y = Value, group=day))+
+      geom_point(color="black",alpha=0.9,size=0.8) + geom_line(color="black",alpha=0.7)+
       geom_hline(yintercept = the_LCL, color ="red", alpha=0.75,size=0.5)+
       geom_hline(yintercept = the_Mean, color ="black", alpha=0.90,size=0.3,linetype="longdash")+
       geom_hline(yintercept = the_UCL, color ="red", alpha=0.75,size=0.5)+
       geom_hline(yintercept = sd_LCL, color ="blue", alpha=0.75,size=0.5)+
-      geom_hline(yintercept = sd_UCL, color ="blue", alpha=0.75,size=0.5)
-      #geom_hline(yintercept = mR_LCL,color="red", alpha=0.5, size=0.4)+
-      #geom_hline(yintercept = mR_UCL, color = "red", alpha=0.5, size=0.4)
-      #ylim(the_Mean-4*sd(cdata$Value),the_Mean+4*sd(cdata$Value))
-    
+      geom_hline(yintercept = sd_UCL, color ="blue", alpha=0.75,size=0.5)+
+      theme_minimal()+
+      ggtitle("ID & Period (1)")+
+      ylim(sd_LCL-0.5,sd_UCL+0.5)+
+      theme(plot.title = element_text(size = 10),
+            axis.title.x=element_blank(),axis.text.x=element_blank(),
+            axis.title.y=element_text(color="black",size=9),axis.text.y=element_text(color="black",size=8,angle=0))
+
     ggplotly(xBar)
 
   })
@@ -994,13 +868,10 @@ server <- shinyServer(function(input, output, session) {
     cdata <- cdata[cdata$ID==input$cID,]
     
     # create grouping columns
-    cdata$Mth  = month(cdata$date)
-    cdata$Day  = day(cdata$date)
-    cdata$Hr  = hour(cdata$date)
-    cdata$dy <- as.Date(cdata$date)  
+    cdata$day <- as.Date(cdata$date)  #cdata$Hr  = hour(cdata$date)
     
     # Select required columns
-    cdata <- select(cdata,date,dy,Mth,Day,Hr,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
+    cdata <- select(cdata,date,day,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
     
     # Aggregate time
     cincl_start <- input$csliderDate[1]
@@ -1029,11 +900,14 @@ server <- shinyServer(function(input, output, session) {
     cdata$MovR <- abs(cdata$MovR) #change diff to absolute
     
     # Plot control chart
-    xBarm <- ggplot(cdata, aes(x=date, y = MovR)) +
-      geom_point(color="black",alpha=0.9,size=1) + geom_line(color="black") +
+    xBarm <- ggplot(cdata, aes(x=date, y = MovR, group=day))+
+      geom_point(color="black",alpha=0.9,size=0.6) + geom_line(color="black",size=0.6) +
       geom_hline(yintercept = mR_LCLm,color="red", alpha=0.5, size=0.5)+
       geom_hline(yintercept = mR_UCLm, color = "red", alpha=0.5, size=0.5)+
-      ylim(-0.25,mR_UCLm+1)
+      ylim(-0.25,mR_UCLm+0.25)+
+      theme_minimal()+
+      theme(axis.title.x=element_text(color="black",size=8),axis.text.x=element_text(color="black",size=8,angle=0),
+            axis.title.y=element_text(color="black",size=9),axis.text.y=element_text(color="black",size=7,angle=0))
     
     ggplotly(xBarm)
   })
@@ -1045,18 +919,19 @@ server <- shinyServer(function(input, output, session) {
     
     # Select by FunSys_item and Unit
     cdata <- cdata[cdata$ID==input$cID,]
+    
     # create grouping columns
-    cdata$Mth  = month(cdata$date)
-    cdata$Day  = day(cdata$date)
-    cdata$Hr  = hour(cdata$date)
-    cdata$dy <- as.Date(cdata$date)  
+    cdata$day <- as.Date(cdata$date)  #cdata$Hr  = hour(cdata$date)
+    
     ## Select required columns
-    cdata <- select(cdata,date,dy,Mth,Day,Hr,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
+    cdata <- select(cdata,date,day,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
+    
     ## Aggregate time
     cincl_start <- input$csliderDate[1]
     cincl_end <- input$csliderDate[2]
     cexcl_start <- input$cinputDate_start
     cexcl_end <- input$cinputDate_end
+    
     ## check input for exclude dates
     if(input$cinputDate_start == 'NULL' | input$cinputDate_end == 'NULL') {
       cdata <- cdata[cdata$date > cincl_start & cdata$date <= cincl_end,]
@@ -1067,8 +942,11 @@ server <- shinyServer(function(input, output, session) {
     }
     
     p <- input$qcVioNo
-    QC_Violations <- ggplot(cdata, aes(x = date, y = Value)) + 
-      stat_qc_violations(method = "XmR", point.size = 1.0, show.facets = c(p:p))
+    QC_Violations <- ggplot(cdata, aes(x = date, y = Value))+ 
+      stat_qc_violations(method = "XmR", point.size = 0.7, show.facets = c(p:p))+
+      theme_minimal()+
+      theme(axis.title.y=element_blank(),axis.title.x=element_blank(),
+            axis.text.y=element_text(color="black",size=6,angle=0),axis.text.x=element_blank())
     
     ggplotly(QC_Violations)
     
@@ -1080,16 +958,10 @@ server <- shinyServer(function(input, output, session) {
     cdata <- as.data.frame(cdata)
     
     # Select by FunSys_item and Unit
-    cdata <- cdata[cdata$ID==input$cID,] #change to cID2
-    # create grouping columns
-    #cdata$Mth  = month(cdata$date)
-    #cdata$Day  = day(cdata$date)
-    #cdata$Hr  = hour(cdata$date)
-    #cdata$dy <- as.Date(cdata$date)  
-    
+    cdata <- cdata[cdata$ID==input$cID,]
+
     # Select required columns for renaming
-    cdata <- select(cdata,date,ID,Value)%>% #dy,Mth,Day,Hr,FunSys_item, MsureGr, MsureGr_lvl
-      rename( package =ID, count =Value)
+    cdata <- select(cdata,date,ID,Value)%>% rename( package =ID, count =Value)
     
     # Aggregate time
     cincl_start <- input$csliderDate[1]
@@ -1113,9 +985,12 @@ server <- shinyServer(function(input, output, session) {
       time_decompose(count, method = "stl", frequency = "auto", trend = "auto") %>%
       anomalize(remainder, method = "iqr", alpha = as.numeric(alphaNum), max_anoms = 0.2) %>%
       time_recompose() %>%
-      plot_anomalies(time_recomposed = TRUE, alpha_dots = 0.5, alpha_ribbon = 0.5,size_dots = 1.5,size_circles = 1.5)
+      plot_anomalies(time_recomposed = TRUE, alpha_dots = 0.5, alpha_ribbon = 0.5,size_dots = 1.0,size_circles = 1.0)
     #+ggtitle("Anomaly - IQR")
-    a<-anomalized+theme(legend.position="none")#+theme(legend.title = element_blank())
+    a<-anomalized+theme(legend.position="none")+
+      #theme_minimal()+theme(legend.title = element_blank())
+      theme(axis.title.x=element_text(color="black",size=8),axis.title.y=element_text(color="black",size=10),
+            axis.text.x=element_text(color="black",size=8),axis.text.y=element_text(color="black",size=9))
     
     ggplotly(a)
   })  
@@ -1133,13 +1008,10 @@ server <- shinyServer(function(input, output, session) {
     cdata <- cdata[cdata$ID==input$cID2,] #change to cID2
     
     # create grouping columns
-    cdata$Mth  = month(cdata$date)
-    cdata$Day  = day(cdata$date)
-    cdata$Hr  = hour(cdata$date)
-    cdata$dy <- as.Date(cdata$date)  
+    cdata$day <- as.Date(cdata$date)  
     
     # Select required columns
-    cdata2 <- select(cdata,date,dy,Mth,Day,Hr,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
+    cdata2 <- select(cdata,date,day,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
     
     # Aggregate time
     cincl_start2 <- input$csliderDate2[1]
@@ -1164,26 +1036,24 @@ server <- shinyServer(function(input, output, session) {
     the_UCL2 <- the_Mean2 + 3 * the_Sigma2
     sd_LCL2 <- the_Mean2 - 3* sd(cdata2$Value)
     sd_UCL2 <- the_Mean2 + 3* sd(cdata2$Value)
-    
-    #mR_LCL2 <- 0
-    #mR_UCL2 <- 3.267*the_mR2
-    
     Rng2 <- (sd_UCL2-sd_LCL2)/6
     
     # Plot control chart
-    xBar2 <- ggplot(cdata2, aes(x=date, y = Value)) +
-      geom_point(color="black",alpha=0.95,size=0.8) + geom_line(color="black",alpha=0.7) +
+    xBar2 <- ggplot(cdata2, aes(x=date, y=Value, group=day)) +
+      geom_point(color="black",alpha=0.9,size=0.8) + geom_line(color="black",alpha=0.7) +
       #stat_QC(method="mR",auto.label = T)+
       #stat_mR(auto.label = T)+
-      ggtitle("Period 2")+
-      geom_hline(yintercept = the_LCL2,color="red", alpha=0.75,size=0.5)+
+      ggtitle("ID & Period (2)")+
+      geom_hline(yintercept = the_LCL2, color ="red", alpha=0.75,size=0.5)+
       geom_hline(yintercept = the_Mean2, color ="black", alpha=0.90,size=0.3,linetype="longdash")+
-      geom_hline(yintercept = the_UCL2, color = "red", alpha=0.75,size=0.5)+
-      geom_hline(yintercept =  sd_LCL2 ,color="blue", alpha=0.75,size=0.5)+
-      geom_hline(yintercept = sd_UCL2, color = "blue", alpha=0.75,size=0.5)
-      #geom_hline(yintercept = mR_LCL2,color="red", alpha=0.5, size=0.4)+
-      #geom_hline(yintercept = mR_UCL2, color = "red", alpha=0.5, size=0.4)
-      #ylim(the_Mean2-4*sd(cdata2$Value),the_Mean2+4*sd(cdata2$Value))
+      geom_hline(yintercept = the_UCL2, color="red" , alpha=0.75,size=0.5)+
+      geom_hline(yintercept =  sd_LCL2, color="blue", alpha=0.75,size=0.5)+
+      geom_hline(yintercept = sd_UCL2, color= "blue", alpha=0.75,size=0.5)+
+      theme_minimal()+
+      ylim(sd_LCL2-0.5,sd_UCL2+0.5)+
+      theme(plot.title = element_text(size = 10),
+            axis.title.x=element_blank(),axis.text.x=element_blank(),
+            axis.title.y=element_text(color="black",size=9),axis.text.y=element_text(color="black",size=8,angle=0))
     
     ggplotly(xBar2)
   })
@@ -1198,13 +1068,10 @@ server <- shinyServer(function(input, output, session) {
     cdata <- cdata[cdata$ID==input$cID2,] #change to cID2
     
     # create grouping columns
-    cdata$Mth  = month(cdata$date)
-    cdata$Day  = day(cdata$date)
-    cdata$Hr  = hour(cdata$date)
-    cdata$dy <- as.Date(cdata$date)  
+    cdata$day <- as.Date(cdata$date)  
     
     # Select required columns
-    cdata2 <- select(cdata,date,dy,Mth,Day,Hr,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
+    cdata2 <- select(cdata,date,day,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
     
     # Aggregate time
     cincl_start2 <- input$csliderDate2[1]
@@ -1222,7 +1089,6 @@ server <- shinyServer(function(input, output, session) {
     
     # Compute Control Chart Parameter
     the_mRm2 <- mean(abs(diff(cdata2$Value)))
-    
     mR_LCLm2 <- 0
     mR_UCLm2 <- 3.267*the_mRm2
     
@@ -1234,11 +1100,14 @@ server <- shinyServer(function(input, output, session) {
     cdata2$MovR <- abs(cdata2$MovR) #change diff to absolute
     
     # Plot control chart
-    xBarm2 <- ggplot(cdata2, aes(x=date, y = MovR)) +
-      geom_point(color="black",alpha=0.9,size=1) + geom_line(color="black") +
+    xBarm2 <- ggplot(cdata2, aes(x=date, y = MovR, group=day)) +
+      geom_point(color="black",alpha=0.9,size=0.6) + geom_line(color="black",size=0.6) +
       geom_hline(yintercept = mR_LCLm2,color="red", alpha=0.5, size=0.5)+
-      geom_hline(yintercept = mR_UCLm2, color = "red", alpha=0.5, size=0.5)+
-      ylim(-0.25,mR_UCLm2+1)
+      geom_hline(yintercept = mR_UCLm2,color="red", alpha=0.5, size=0.5)+
+      ylim(-0.25,mR_UCLm2+0.25)+
+      theme_minimal()+
+      theme(axis.title.x=element_text(color="black",size=8),axis.text.x=element_text(color="black",size=8,angle=0),
+            axis.title.y=element_text(color="black",size=9),axis.text.y=element_text(color="black",size=7,angle=0))
     
     ggplotly(xBarm2)
   })
@@ -1252,13 +1121,10 @@ server <- shinyServer(function(input, output, session) {
     cdata <- cdata[cdata$ID==input$cID2,] #change to cID2
     
     # create grouping columns
-    cdata$Mth  = month(cdata$date)
-    cdata$Day  = day(cdata$date)
-    cdata$Hr  = hour(cdata$date)
-    cdata$dy <- as.Date(cdata$date)  
+    cdata$day <- as.Date(cdata$date)  #cdata$Hr = hour(cdata$date)
     
     # Select required columns
-    cdata2 <- select(cdata,date,dy,Mth,Day,Hr,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
+    cdata2 <- select(cdata,date,day,ID,Value,FunSys_item, MsureGr, MsureGr_lvl)
     
     # Aggregate time
     cincl_start2 <- input$csliderDate2[1]
@@ -1274,10 +1140,13 @@ server <- shinyServer(function(input, output, session) {
       cdata2 <- cdata2[!(cdata2$date > cexcl_start2 & cdata2$date <= cexcl_end2),]
     }
     
-    p <- input$qcVioNo
+    p <- input$qcVioNo #from global input
     
     QC_Violations2 <- ggplot(cdata2, aes(x = date, y = Value)) + 
-      stat_qc_violations(method = "XmR", point.size = 1.0, show.facets = c(p:p))    
+      stat_qc_violations(method = "XmR", point.size = 0.7, show.facets = c(p:p))+
+      theme_minimal()+
+      theme(axis.title.y=element_blank(),axis.title.x=element_blank(),
+            axis.text.y=element_text(color="black",size=6,angle=0),axis.text.x=element_blank())
     
     ggplotly(QC_Violations2)
   })
@@ -1290,15 +1159,8 @@ server <- shinyServer(function(input, output, session) {
     # Select by FunSys_item and Unit
     cdata <- cdata[cdata$ID==input$cID2,] #change to cID2
     
-    # create grouping columns
-    #cdata$Mth  = month(cdata$date)
-    #cdata$Day  = day(cdata$date)
-    #cdata$Hr  = hour(cdata$date)
-    #cdata$dy <- as.Date(cdata$date)  
-    
     # Select required columns for renaming
-    cdata2 <- select(cdata,date,ID,Value)%>% #dy,Mth,Day,Hr,FunSys_item, MsureGr, MsureGr_lvl
-          rename( package =ID, count =Value)
+    cdata2 <- select(cdata,date,ID,Value)%>% rename( package =ID, count =Value)
     
     # Aggregate time
     cincl_start2 <- input$csliderDate2[1]
@@ -1322,9 +1184,12 @@ server <- shinyServer(function(input, output, session) {
       time_decompose(count, method = "stl", frequency = "auto", trend = "auto") %>%
       anomalize(remainder, method = "iqr", alpha = as.numeric(alphaNum), max_anoms = 0.2) %>%
       time_recompose() %>%
-      plot_anomalies(time_recomposed = TRUE, alpha_dots = 0.5, alpha_ribbon = 0.5,size_dots = 1.5,size_circles = 1.5)
+      plot_anomalies(time_recomposed = TRUE, alpha_dots = 0.5, alpha_ribbon = 0.5,size_dots = 1.0,size_circles = 1.0)
       #+ggtitle("Anomaly - IQR")
-    a2<-anomalized2+theme(legend.position="none")#+theme(legend.title = element_blank())
+    a2<-anomalized2+theme(legend.position="none")+
+      #theme_minimal()+theme(legend.title = element_blank())+
+      theme(axis.title.x=element_text(color="black",size=8),axis.title.y=element_text(color="black",size=10),
+            axis.text.x=element_text(color="black",size=8),axis.text.y=element_text(color="black",size=9))
     
     ggplotly(a2)
   })  
