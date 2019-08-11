@@ -849,7 +849,7 @@ server <- shinyServer(function(input, output, session) {
       geom_hline(yintercept = sd_UCL, color ="blue", alpha=0.75,size=0.5)+
       theme_minimal()+
       ggtitle("ID & Period (1)")+
-      ylim(sd_LCL-0.5,sd_UCL+0.5)+
+      #ylim(sd_LCL-0.5,sd_UCL+0.5)+
       theme(plot.title = element_text(size = 10),
             axis.title.x=element_blank(),axis.text.x=element_blank(),
             axis.title.y=element_text(color="black",size=9),axis.text.y=element_text(color="black",size=8,angle=0))
@@ -904,7 +904,7 @@ server <- shinyServer(function(input, output, session) {
       geom_point(color="black",alpha=0.9,size=0.6) + geom_line(color="black",size=0.6) +
       geom_hline(yintercept = mR_LCLm,color="red", alpha=0.5, size=0.5)+
       geom_hline(yintercept = mR_UCLm, color = "red", alpha=0.5, size=0.5)+
-      ylim(-0.25,mR_UCLm+0.25)+
+      #ylim(-0.25,mR_UCLm+0.25)+
       theme_minimal()+
       theme(axis.title.x=element_text(color="black",size=8),axis.text.x=element_text(color="black",size=8,angle=0),
             axis.title.y=element_text(color="black",size=9),axis.text.y=element_text(color="black",size=7,angle=0))
@@ -1050,7 +1050,7 @@ server <- shinyServer(function(input, output, session) {
       geom_hline(yintercept =  sd_LCL2, color="blue", alpha=0.75,size=0.5)+
       geom_hline(yintercept = sd_UCL2, color= "blue", alpha=0.75,size=0.5)+
       theme_minimal()+
-      ylim(sd_LCL2-0.5,sd_UCL2+0.5)+
+      #ylim(sd_LCL2-0.5,sd_UCL2+0.5)+
       theme(plot.title = element_text(size = 10),
             axis.title.x=element_blank(),axis.text.x=element_blank(),
             axis.title.y=element_text(color="black",size=9),axis.text.y=element_text(color="black",size=8,angle=0))
@@ -1104,7 +1104,7 @@ server <- shinyServer(function(input, output, session) {
       geom_point(color="black",alpha=0.9,size=0.6) + geom_line(color="black",size=0.6) +
       geom_hline(yintercept = mR_LCLm2,color="red", alpha=0.5, size=0.5)+
       geom_hline(yintercept = mR_UCLm2,color="red", alpha=0.5, size=0.5)+
-      ylim(-0.25,mR_UCLm2+0.25)+
+      #ylim(-0.25,mR_UCLm2+0.25)+
       theme_minimal()+
       theme(axis.title.x=element_text(color="black",size=8),axis.text.x=element_text(color="black",size=8,angle=0),
             axis.title.y=element_text(color="black",size=9),axis.text.y=element_text(color="black",size=7,angle=0))
