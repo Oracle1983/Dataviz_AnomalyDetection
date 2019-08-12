@@ -467,6 +467,9 @@ server <- shinyServer(function(input, output, session) {
       type = 'parcoords',
       frame = "Null",
       dimensions = list(
+        list(range = c(min(data$id),max(data$id)),
+             label = 'Date', 
+             values = data$id),
         list(range = c(min(data$H11),max(data$H11)),
              label = '11H', 
              values = data$H11),
