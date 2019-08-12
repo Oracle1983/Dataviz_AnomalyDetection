@@ -477,88 +477,161 @@ server <- shinyServer(function(input, output, session) {
     data <- data[data$FunSys_item==input$hFunSys_item_pc,]
     
     # Plot Parallel Coordinates
-    trace1 <- list(
-      line = list(color = data$X1,
-                  colorscale='Jet',
-                  showscale=TRUE,
-                  reversescale=TRUE),
-      type = 'parcoords',
-      frame = "Null",
-      dimensions = list(
-        list(range = c(min(data$id), max(data$id)),
-             label="Date",
-             values = data$id),
-        list(range = c(min(data$H11),max(data$H11)),
-             label = '11H', 
-             values = data$H11),
-        list(range = c(min(data$H2),max(data$H2)),
-             label = '2H', 
-             values = data$H2),
-        list(range = c(min(data$H5),max(data$H5)),
-             label = '5H', 
-             values = data$H5),
-        list(range = c(min(data$H8),max(data$H8)),
-             label = '8H', 
-             values = data$H8),
-        list(range = c(min(data$AP1),max(data$AP1)),
-             label = 'AP1', 
-             values = data$AP1),
-        list(range = c(min(data$DISK11),max(data$DISK11)),
-             label = 'DISK11', 
-             values = data$DISK11),
-        list(range = c(min(data$DISK12),max(data$DISK12)),
-             label = 'DISK12', 
-             values = data$DISK12),
-        list(range = c(min(data$End_Face),max(data$End_Face)),
-             label = 'End Face', 
-             values = data$End_Face),
-        list(range = c(min(data$HP1),max(data$HP1)),
-             label = 'HP1', 
-             values = data$HP1),
-        list(range = c(min(data$HPCLR_1),max(data$HPCLR_1)),
-             label = 'HPCLR_1', 
-             values = data$HPCLR_1),
-        list(range = c(min(data$HPCLR_2),max(data$HPCLR_2)),
-             label = 'HPCLR_2', 
-             values = data$HPCLR_2),
-        list(range = c(min(data$HPCLR_3),max(data$HPCLR_3)),
-             label = 'HPCLR_3', 
-             values = data$HPCLR_3),
-        list(range = c(min(data$L),max(data$L)),
-             label = 'L', 
-             values = data$L),
-        list(range = c(min(data$L1),max(data$L1)),
-             label = 'L1', 
-             values = data$L1),
-        list(range = c(min(data$L2),max(data$L2)),
-             label = 'L2', 
-             values = data$L2),
-        list(range = c(min(data$L2oo3),max(data$L2oo3)),
-             label = 'L2oo3', 
-             values = data$L2oo3),
-        list(range = c(min(data$MBH40GD010),max(data$MBH40GD010)),
-             label = 'MBH40GD010', 
-             values = data$MBH40GD010),
-        list(range = c(min(data$R),max(data$R)),
-             label = 'R', 
-             values = data$R),
-        list(range = c(min(data$T1),max(data$T1)),
-             label = 'T1', 
-             values = data$T1),
-        list(range = c(min(data$T3),max(data$T3)),
-             label = 'T3', 
-             values = data$T3)
+    if(input$hFunSys_item_pc == '40') {
+      trace1 <- list(
+        line = list(color = data$id,
+                    colorscale='Jet',
+                    showscale=TRUE,
+                    reversescale=TRUE),
+        type = 'parcoords',
+        frame = "Null", 
+        dimensions = list(
+          list(range = c(min(data$id), max(data$id)),
+               label="Date",
+               values = data$id),
+          list(range = c(min(data$AP1),max(data$AP1)),
+               label = 'AP1', 
+               values = data$AP1),
+          list(range = c(min(data$DISK11),max(data$DISK11)),
+               label = 'DISK11', 
+               values = data$DISK11),
+          list(range = c(min(data$DISK12),max(data$DISK12)),
+               label = 'DISK12', 
+               values = data$DISK12),
+          list(range = c(min(data$End_Face),max(data$End_Face)),
+               label = 'End Face', 
+               values = data$End_Face),
+          list(range = c(min(data$L1),max(data$L1)),
+               label = 'L1', 
+               values = data$L1),
+          list(range = c(min(data$L2),max(data$L2)),
+               label = 'L2', 
+               values = data$L2),
+          list(range = c(min(data$L2oo3),max(data$L2oo3)),
+               label = 'L2oo3', 
+               values = data$L2oo3),
+          list(range = c(min(data$MBH40GD010),max(data$MBH40GD010)),
+               label = 'MBH40GD010', 
+               values = data$MBH40GD010),
+          list(range = c(min(data$HP1),max(data$HP1)),
+               label = 'HP1', 
+               values = data$HP1),
+          list(range = c(min(data$HPCLR_1),max(data$HPCLR_1)),
+               label = 'HPCLR_1', 
+               values = data$HPCLR_1),
+          list(range = c(min(data$HPCLR_2),max(data$HPCLR_2)),
+               label = 'HPCLR_2', 
+               values = data$HPCLR_2),
+          list(range = c(min(data$HPCLR_3),max(data$HPCLR_3)),
+               label = 'HPCLR_3', 
+               values = data$HPCLR_3)
+        )
       )
-    )
-    layout <- list(
-      margin = list(
-        b = 40,
-        l = 60,
-        r = 10
-      ),
-      hovermode = "closest",
-      showlegend = FALSE
-    )
+      layout <- list(
+        margin = list(
+          b = 40,
+          l = 60,
+          r = 10
+        ),
+        hovermode = "closest",
+        showlegend = FALSE
+      )}
+    
+    if(input$hFunSys_item_pc == '21') {
+      trace1 <- list(
+        line = list(color = data$id,
+                    colorscale='Jet',
+                    showscale=TRUE,
+                    reversescale=TRUE),
+        type = 'parcoords',
+        frame = "Null", 
+        dimensions = list(
+          list(range = c(min(data$id), max(data$id)),
+               label="Date",
+               values = data$id),
+          list(range = c(min(data$L),max(data$L)),
+               label = 'L',
+               values = data$L),
+          list(range = c(min(data$R),max(data$R)),
+               label = 'R',
+               values = data$R)
+        )
+      )
+      layout <- list(
+        margin = list(
+          b = 40,
+          l = 60,
+          r = 10
+        ),
+        hovermode = "closest",
+        showlegend = FALSE
+      )}
+   
+    if(input$hFunSys_item_pc == '22') {
+      trace1 <- list(
+        line = list(color = data$id,
+                    colorscale='Jet',
+                    showscale=TRUE,
+                    reversescale=TRUE),
+        type = 'parcoords',
+        frame = "Null", 
+        dimensions = list(
+          list(range = c(min(data$id), max(data$id)),
+               label="Date",
+               values = data$id),
+          list(range = c(min(data$H11),max(data$H11)),
+               label = '11H',
+               values = data$H11),
+          list(range = c(min(data$H2),max(data$H2)),
+               label = '2H',
+               values = data$H2),
+          list(range = c(min(data$H5),max(data$H5)),
+               label = '5H',
+               values = data$H5),
+          list(range = c(min(data$H8),max(data$H8)),
+               label = '8H',
+               values = data$H8)
+        )
+      )
+      layout <- list(
+        margin = list(
+          b = 40,
+          l = 60,
+          r = 10
+        ),
+        hovermode = "closest",
+        showlegend = FALSE
+      )} 
+    
+    if(input$hFunSys_item_pc == '50') {
+      trace1 <- list(
+        line = list(color = data$id,
+                    colorscale='Jet',
+                    showscale=TRUE,
+                    reversescale=TRUE),
+        type = 'parcoords',
+        frame = "Null", 
+        dimensions = list(
+          list(range = c(min(data$id), max(data$id)),
+               label="Date",
+               values = data$id),
+          list(range = c(min(data$T1),max(data$T1)),
+               label = 'T1',
+               values = data$T1),
+          list(range = c(min(data$T3),max(data$T3)),
+               label = 'T3',
+               values = data$T3)
+        )
+      )
+      layout <- list(
+        margin = list(
+          b = 40,
+          l = 60,
+          r = 10
+        ),
+        hovermode = "closest",
+        showlegend = FALSE
+      )}
     
     ## TODO: Make axis readable 
     p <- plot_ly()
