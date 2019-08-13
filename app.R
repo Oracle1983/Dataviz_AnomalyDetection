@@ -110,23 +110,17 @@ ui <- dashboardPage(
                          inputId = 'hFunSys_item_pc',
                          label = 'Function System:',
                          choices = unique(as.vector(per_hour['FunSys_item'])),
-                         selected = '01',
+                         selected = '40',
                          multiple = FALSE,
                          selectize = FALSE)
                        ),
-                       # selectInput(
-                       #   inputId = 'hUnit_pc',
-                       #   label = 'Unit:',
-                       #   choices = unique(as.vector(hourly['Unit'])),
-                       #   selected = 'degC',
-                       #   multiple = FALSE,
-                       #   selectize = TRUE),
                      width = 3,
                      title = "Selection of Sensor Groups",
                      color = "teal", ribbon = TRUE, title_side = "top left"
                       )
                   ),
-
+            
+            tags$style(HTML(".js-irs-1 .irs-single, .js-irs-1 .irs-bar-edge, .js-irs-1 .irs-bar {background: lightgrey}")),
             column(12,
                    box(
                      splitLayout(
@@ -135,8 +129,13 @@ ui <- dashboardPage(
                                    mindate,
                                    maxdate,
                                    c(mindate, maxdate),
+                                   step = 300),
+                       sliderInput("hsliderDate2_pc", 'Date (reference - min of Day Window):',
+                                   mindate,
+                                   maxdate,
+                                   value = mindate,
                                    step = 300)
-                                ),
+                       ),
                      splitLayout(
                        cellArgs = list(style = "padding:0px;padding-bottom:0px;"),
                        selectInput(
@@ -156,15 +155,30 @@ ui <- dashboardPage(
                          multiple = FALSE,
                          selectize = FALSE,
                          width=200),
-
+                       
+                      
+                       selectInput(
+                         inputId = 'hrange_pc', 
+                         label = 'Day Window:', 
+                         choices = c('1 day'=1,
+                                     '3 days'=3, 
+                                     '5 days'=5,
+                                     '7 days'=7,
+                                     '14 days'=14,
+                                     'All days'=max(unique(day(per_hour$date)))),
+                         selected = 1,
+                         multiple = FALSE, 
+                         selectize = FALSE),
+                       
                        selectInput(
                          inputId = 'hinterval_pc',
                          label = 'Time Interval:',
                          choices = '*',
                          multiple = FALSE,
-                         selectize = FALSE,
-                         width=100)
-                                ),
+                         selectize = FALSE)
+                       
+                       ),
+                     
                      width = 12,
                      title = "Other Settings",
                      color = "teal", ribbon = TRUE, title_side = "top left"
@@ -476,19 +490,25 @@ server <- shinyServer(function(input, output, session) {
     # Filter time range
     data <- data[data$FunSys_item==input$hFunSys_item_pc,]
     
+    # Convert date into unix time
+    unixtime <- as.numeric(as.POSIXct(data$date, format="%Y-%m-%d %H:%M:%S"))
+    unix1 <- as.numeric(as.POSIXct(input$hsliderDate2_pc, format="%Y-%m-%d %H:%M:%S"))
+    unix2 <- as.numeric(as.POSIXct(input$hsliderDate2_pc+(86400*as.numeric(input$hrange_pc)), format="%Y-%m-%d %H:%M:%S"))
+    
     # Plot Parallel Coordinates
     if(input$hFunSys_item_pc == '40') {
       trace1 <- list(
-        line = list(color = data$id,
+        line = list(color = unixtime,
                     colorscale='Jet',
                     showscale=TRUE,
                     reversescale=TRUE),
         type = 'parcoords',
         frame = "Null", 
         dimensions = list(
-          list(range = c(min(data$id), max(data$id)),
-               label="Date",
-               values = data$id),
+          list(range = c(min(unixtime), max(unixtime)),
+               label="UNIX_Time",
+               values  = unixtime,
+               constraintrange = c(unix1,unix2)),
           list(range = c(min(data$AP1),max(data$AP1)),
                label = 'AP1', 
                values = data$AP1),
@@ -539,16 +559,17 @@ server <- shinyServer(function(input, output, session) {
     
     if(input$hFunSys_item_pc == '21') {
       trace1 <- list(
-        line = list(color = data$id,
+        line = list(color = unixtime,
                     colorscale='Jet',
                     showscale=TRUE,
                     reversescale=TRUE),
         type = 'parcoords',
         frame = "Null", 
         dimensions = list(
-          list(range = c(min(data$id), max(data$id)),
-               label="Date",
-               values = data$id),
+          list(range = c(min(unixtime), max(unixtime)),
+               label="UNIX_Time",
+               values  = unixtime,
+               constraintrange = c(unix1,unix2)),
           list(range = c(min(data$L),max(data$L)),
                label = 'L',
                values = data$L),
@@ -569,16 +590,17 @@ server <- shinyServer(function(input, output, session) {
    
     if(input$hFunSys_item_pc == '22') {
       trace1 <- list(
-        line = list(color = data$id,
+        line = list(color = unixtime,
                     colorscale='Jet',
                     showscale=TRUE,
                     reversescale=TRUE),
         type = 'parcoords',
         frame = "Null", 
         dimensions = list(
-          list(range = c(min(data$id), max(data$id)),
-               label="Date",
-               values = data$id),
+          list(range = c(min(unixtime), max(unixtime)),
+               label="UNIX_Time",
+               values  = unixtime,
+               constraintrange = c(unix1,unix2)),
           list(range = c(min(data$H11),max(data$H11)),
                label = '11H',
                values = data$H11),
@@ -605,16 +627,17 @@ server <- shinyServer(function(input, output, session) {
     
     if(input$hFunSys_item_pc == '50') {
       trace1 <- list(
-        line = list(color = data$id,
+        line = list(color = unixtime,
                     colorscale='Jet',
                     showscale=TRUE,
                     reversescale=TRUE),
         type = 'parcoords',
         frame = "Null", 
         dimensions = list(
-          list(range = c(min(data$id), max(data$id)),
-               label="Date",
-               values = data$id),
+          list(range = c(min(unixtime), max(unixtime)),
+               label="UNIX_Time",
+               values  = unixtime,
+               constraintrange = c(unix1,unix2)),
           list(range = c(min(data$T1),max(data$T1)),
                label = 'T1',
                values = data$T1),
@@ -633,7 +656,6 @@ server <- shinyServer(function(input, output, session) {
         showlegend = FALSE
       )}
     
-    ## TODO: Make axis readable 
     p <- plot_ly()
     p <- add_trace(p, line=trace1$line, type=trace1$type, frame=trace1$frame, dimensions=trace1$dimensions)
     p <- layout(p, margin=layout$margin, hovermode=layout$hovermode, showlegend=layout$showlegend)
