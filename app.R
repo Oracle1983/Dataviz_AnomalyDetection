@@ -17,30 +17,46 @@
 #
 # ########################################################################################################################
 
-packages <- c('shiny',
-              'semantic.dashboard',
-              'tidyverse',
-              'plotly',
-              'latticeExtra',
-              'openair',
-              'DataCombine',
-              'ggQC',
-              'xts',
-              'lubridate',
-              'tibbletime',
-              'anomalize',
-              'DT',
-              'data.table')
+# packages <- c('shiny',
+#               'semantic.dashboard',
+#               'tidyverse',
+#               'plotly',
+#               'latticeExtra',
+#               'openair',
+#               'DataCombine',
+#               'ggQC',
+#               'xts',
+#               'lubridate',
+#               'tibbletime',
+#               'anomalize',
+#               'DT',
+#               'data.table',
+#               'rsconnect')
+# 
+# for (p in packages) {
+#   if(!require(p, character.only = T)) {
+#     install.packages(p)
+#   }
+#   library(p, character.only = T)
+# }
 
-for (p in packages) {
-  if(!require(p, character.only = T)) {
-    install.packages(p)
-  }
-  library(p, character.only = T)
-}
+library(shiny)
+library(semantic.dashboard)
+library(tidyverse)
+library(plotly)
+library(latticeExtra)
+library(openair)
+library(DataCombine)
+library(ggQC)
+library(xts)
+library(lubridate)
+library(tibbletime)
+library(anomalize)
+library(DT)
+library(data.table)
+library(rsconnect)
 
 options(shiny.maxRequestSize = 30*1024^2)
-
 
 # Load processed data (for choices under selectInput)
 hourly <- read_csv("./data/hourly.csv", locale=locale(tz="Singapore"))
@@ -93,7 +109,8 @@ ui <- dashboardPage(
         tabItem(
           tabName = "overview",
           fluidRow(
-            h1("Overview")
+            h1("Overview"),
+            HTML("Testing 123")
             )
           ),
         ##########################################
