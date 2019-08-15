@@ -1,0 +1,161 @@
+<html>
+
+<head>
+<style type="text/css">
+.inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.left {
+  text-align: left;
+}
+.right {
+  text-align: right;
+}
+.center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Overview</title>
+</head>
+
+<body>
+
+<h4 class="ui horizontal divider header">
+  <i class="clipboard outline icon"></i>
+  Overview
+</h4>
+<p>Doggie treats are good for all times of the year. Proven to be eaten by 99.9% of all dogs worldwide.</p>
+
+<h4 class="ui horizontal divider header">
+  <i class="chart bar outline icon"></i>
+  Parallel Coordinates Plot
+</h4>
+<h5 class="ui header">Purpose</h5>
+<li> To explore the inter-relationships between sensor readings over time  </li>
+<li> To detect abnormal inter-relationships between sensor readings </li>
+<img class="ui big image" src="overview_pp.png">
+<h5 class="ui header">How To Interpret</h5>
+<li> Each vertical column represents sensor group readings belonging to the Functional System Item selected  </li>
+<li> The scale along each vertical column represents minimal to maximum values of each sensor group readings </li>
+<li> Each line on the parallel plot represents a unit of the time interval selected. For example, if ‘Every hour’ is selected, each line represents an hour of reading for the entire range of dates selected </li>
+<h5 class="ui header">How To Use</h5>
+<li> Allowable selections: </li>
+<ol>
+  <li>Function System</li>
+  <li>Range of dates</li>
+  <li>Date (reference - min. of Day Window)</li>
+  <li>Exclude date range</li>
+  <li>Day window (1 day, 3 days, 5 days, 7 days, 14 days, All days)</li>
+  <li>Time interval (Every 5min, Every hour, Every day)</li>
+</ol>
+<li>Interactive elements:</li>
+<ul>
+  <li> Drag along one or multiple axis to highlight data</li>
+  <li> Double-click to dismiss selection</li>
+  <li> Drag and re-arrange order of vertical axis</li>
+</ul>
+<li>Exploratory Data Analysis</li>
+<ul>
+  <li> Select the desired window of time you wish to examine from ‘Day Window’</li>
+  <li> Drag the slider from ‘Date (reference – min of Day Window) horizontally in order to examine the sensor readings with respect to time. The date on the slider denotes the earliest date in the time window selected </li>
+  <li> Alternatively, select and drag the range of data on the left-most axis upwards slowly </li>
+  <li> Lowest values on the date axis denotes the start date in the range of dates selected </li>
+  <li> Take note of lines that display inter-relationships that are abnormal with comparison to data set within the same period </li>
+  <li> These abnormalities suggest potential sensors and date period that are worthy of further investigation </li>
+</ul>
+
+<h4 class="ui horizontal divider header">
+  <i class="chart area icon"></i>
+  Horizon Graph
+</h4>
+<h5 class="ui header">Purpose</h5>
+<li> To explore the percentage of changes for sensor readings over time  </li>
+<li> To highlight potentially abnormal sensor readings with highest percentage of changes </li>
+<li> To highlight potentially abnormal sensor readings with persistent positive/negative trend </li>
+<img class="ui big image" src="overview_horizon.png">
+<h5 class="ui header">How To Interpret</h5>
+<li> Sensors identified by its their respective ID are arranged by row, and timestamp from earliest to latest are arranged horizontally from left to right respectively  </li>
+<li> Based on the mirrored chart as described in the paper [1], the negative values are flipped such that both positive and negative values are on the same axis. The blue represents positive percentage of changes between current and last sensor readings, whereas the red represents negative percentage of changes.  The magnitude of these values is distinguished by the color hue. Darker shades represent larger values, whereas lighter shades represent smaller values </li>
+<img class="ui big image" src="interpret_horizon.png">
+<p> <font size="-3">source: http://vis.stanford.edu/files/2009-TimeSeries-CHI.pdf </font></p>
+<br>
+Reference: 
+<p> <font size="-3">[1] Heer, Jeffrey & Kong, Nicholas & Agrawala, Maneesh. (2009). Sizing the horizon: The effects of chart size and layering on the graphical perception of time series visualizations. Conference on Human Factors in Computing Systems - Proceedings. 1303-1312. 10.1145/1518701.1518897 </font></p>
+<h5 class="ui header">How To Use</h5>
+<li> Allowable selections: </li>
+<ol>
+  <li>Function System</li>
+  <li>Range of dates</li>
+  <li>Date (reference - min. of Day Window)</li>
+  <li>Exclude date range</li>
+  <li>Day window (1 day, 3 days, 5 days, 7 days, 14 days, All days)</li>
+  <li>Time interval (Every 5min, Every hour, Every day)</li>
+</ol>
+<li>Interactive elements:</li>
+<ul>
+  <li> Drag along one or multiple axis to highlight data</li>
+  <li> Double-click to dismiss selection</li>
+  <li> Drag and re-arrange order of vertical axis</li>
+</ul>
+<li>Exploratory Data Analysis</li>
+<ul>
+  <li> Select the desired window of time you wish to examine from ‘Day Window’</li>
+  <li> Drag the slider from ‘Date (reference – min of Day Window) horizontally in order to examine the sensor readings with respect to time. The date on the slider denotes the earliest date in the time window selected </li>
+  <li> Alternatively, select and drag the range of data on the left-most axis upwards slowly </li>
+  <li> Lowest values on the date axis denotes the start date in the range of dates selected </li>
+  <li> Take note of lines that display inter-relationships that are abnormal with comparison to data set within the same period </li>
+  <li> These abnormalities suggest potential sensors and date period that are worthy of further investigation </li>
+</ul>
+
+
+
+</body>
+</html>

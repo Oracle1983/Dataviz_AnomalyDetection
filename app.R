@@ -14,7 +14,9 @@
 #'anomalize' =>
 #'DT' => For DataTables function to display R data objects (matrices or data frames) as tables.
 #'data.table' => For transform function to perform data.table transformation.
-#
+#'rsconnect' => For deployment of app on shinyapp.io for web hosting
+#''shinyLP' => For calling of function panel_div(), which is a wrapper for enabling HTML on shiny applications
+
 # ########################################################################################################################
 
 # packages <- c('shiny',
@@ -31,7 +33,8 @@
 #               'anomalize',
 #               'DT',
 #               'data.table',
-#               'rsconnect')
+#               'rsconnect',
+#                'shinyLP')
 # 
 # for (p in packages) {
 #   if(!require(p, character.only = T)) {
@@ -40,6 +43,7 @@
 #   library(p, character.only = T)
 # }
 
+# For loading into shinyapp.io
 library(shiny)
 library(semantic.dashboard)
 library(tidyverse)
@@ -55,6 +59,7 @@ library(anomalize)
 library(DT)
 library(data.table)
 library(rsconnect)
+library(shinyLP)
 
 options(shiny.maxRequestSize = 30*1024^2)
 
@@ -108,11 +113,11 @@ ui <- dashboardPage(
         ##########################################
         tabItem(
           tabName = "overview",
-          fluidRow(
-            h1("Overview"),
-            HTML("Testing 123")
-            )
-          ),
+          
+          panel_div(class_type = "primary",
+                    panel_title = " ",
+                    content = includeHTML("Overview.Rhtml"))
+        ),
         ##########################################
         ########### parallelplot-start ###########
         ##########################################

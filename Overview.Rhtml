@@ -1,0 +1,151 @@
+<html>
+
+<head>
+<title>Overview</title>
+</head>
+
+<body>
+
+<! Overview section -->
+<h4 class="ui horizontal divider header">
+  <i class="clipboard outline icon"></i>
+  Overview
+</h4>
+<p>Doggie treats are good for all times of the year. Proven to be eaten by 99.9% of all dogs worldwide.</p>
+
+<! Parallel Coordinates Plot section -->
+<h4 class="ui horizontal divider header">
+  <i class="chart bar outline icon"></i>
+  Parallel Coordinates Plot
+</h4>
+
+<h5 class="ui header">Purpose</h5>
+<li> To explore the inter-relationships between sensor readings over time  </li>
+<li> To detect abnormal inter-relationships between sensor readings </li>
+<img class="ui big image" src="overview_pp.png">
+
+<h5 class="ui header">How To Use</h5>
+<li> Allowable selections: </li>
+<ol>
+  <li>Function System</li>
+  <li>Range of dates</li>
+  <li>Date (reference - min. of Day Window)</li>
+  <li>Exclude date range</li>
+  <li>Day window (1 day, 3 days, 5 days, 7 days, 14 days, All days)</li>
+  <li>Time interval (Every 5min, Every hour, Every day)</li>
+</ol>
+
+<li>Interactive elements:</li>
+<ul>
+  <li> Drag along one or multiple axis to highlight data</li>
+  <li> Double-click to dismiss selection</li>
+  <li> Drag and re-arrange order of vertical axis</li>
+</ul>
+
+<li>Exploratory Data Analysis</li>
+<ul>
+  <li> Select the desired window of time you wish to examine from ‘Day Window’</li>
+  <li> Drag the slider from ‘Date (reference – min of Day Window) horizontally in order to examine the sensor readings with respect to time. The date on the slider denotes the earliest date in the time window selected </li>
+  <li> Alternatively, select and drag the range of data on the left-most axis upwards slowly </li>
+  <li> Lowest values on the date axis denotes the start date in the range of dates selected </li>
+  <li> Take note of lines that display inter-relationships that are abnormal with comparison to data set within the same period </li>
+  <li> These abnormalities suggest potential abnormal sensor readings and timestamp that should warrant more in-depth investigation </li>
+</ul>
+
+<h5 class="ui header">How To Interpret</h5>
+<li> Each vertical column represents sensor group readings belonging to the Functional System Item selected  </li>
+<li> The scale along each vertical column represents minimal to maximum values of each sensor group readings </li>
+<li> Each line on the parallel plot represents a unit of the time interval selected. For example, if ‘Every hour’ is selected, each line represents an hour of reading for the entire range of dates selected </li>
+
+<! Horizon Graph section -->
+<h4 class="ui horizontal divider header">
+  <i class="chart area icon"></i>
+  Horizon Graph
+</h4>
+
+<h5 class="ui header">Purpose</h5>
+<li> To explore the percentage of changes for sensor readings over time  </li>
+<li> To highlight potentially abnormal sensor readings with highest percentage of changes </li>
+<li> To highlight potentially abnormal sensor readings with persistent positive/negative trend </li>
+<img class="ui big image" src="overview_horizon.png">
+
+<h5 class="ui header">How To Use</h5>
+<li> Allowable selections: </li>
+<ol>
+  <li>Function System</li>
+  <li>Range of dates</li>
+  <li>Exclude date range</li>
+  <li>Day window (1 day, 3 days, 5 days, 7 days, 14 days, All days)</li>
+  <li>Time aggregation (Every 5min, Every hour, Every day)</li>
+  <li> Horizon color scale </li>
+</ol>
+
+<li>Exploratory Data Analysis</li>
+<ul>
+  <li> The range of dates slider can be adjusted accordingly to achieve the desired observation period. Upon selecting full range, percentage of changes can be observed holistically in attempting to pick up sensors with prominent positive or negative value or trend within the same function system</li>
+  <li> The day window input specifies the number of days for the observation period in order to zoom in on a portion of the graph. The range of dates slider will be reactively updated and can be drag left or right to observe anomalies with greater details for across the full range. (Horizon color scale slider is to make adjustment to the scale of each color segment to enhance the readability.) </li>
+  <li> Within the observation period, top few sensors with highest percentage of changes and with persistent trends, from both positive and negative sections, are displayed together with their timestamp on data tables. They are potentially abnormal sensor readings </li>
+  <li> These abnormalities suggest potential abnormal sensor readings and timestamp that should warrant more in-depth investigation </li>
+</ul>
+
+<h5 class="ui header">How To Interpret</h5>
+<li> Sensors identified by its their respective ID are arranged by row, and timestamp from earliest to latest are arranged horizontally from left to right respectively  </li>
+<li> Based on the mirrored chart as described in the paper [1], the negative values are flipped such that both positive and negative values are on the same axis. The blue represents positive percentage of changes between current and last sensor readings, whereas the red represents negative percentage of changes.  The magnitude of these values is distinguished by the color hue. Darker shades represent larger values, whereas lighter shades represent smaller values </li>
+<img class="ui big image" src="interpret_horizon.png">
+<p> <font size="-3">source: http://vis.stanford.edu/files/2009-TimeSeries-CHI.pdf </font></p>
+<br>
+Reference: 
+<p> <font size="-3">[1] Heer, Jeffrey & Kong, Nicholas & Agrawala, Maneesh. (2009). Sizing the horizon: The effects of chart size and layering on the graphical perception of time series visualizations. Conference on Human Factors in Computing Systems - Proceedings. 1303-1312. 10.1145/1518701.1518897 </font></p>
+
+<! Control Charts section -->
+<h4 class="ui horizontal divider header">
+  <i class="chart line icon"></i>
+  Control Charts
+</h4>
+
+<h5 class="ui header">Purpose</h5>
+<li> XmR chart: Plot individual sensor readings against time with use control limits to detect systematic and random variation</li>
+<li> Sigma Violation chart: Highlight points where sigma threshold are breacheds </li>
+<li> Anomaly chart: detect anomaly after trend and seasonality factors are removed </li>
+<li> Compare between different Periods and/or Sensors</li>
+<img class="ui big image" src="overview_cc.png">
+
+<h5 class="ui header">How To Use</h5>
+<li> Allowable selections: </li>
+<ol>
+  <li>Time Interval</li>
+  <li>Violation Sigma Level</li>
+  <li>Anomaly Level</li>
+  <li>Sensor X 2 </li>
+  <li>Period Range X 2</li>
+  <li>Exclusion Period X 2</li>
+</ol>
+<li>Exploratory Data Analysis</li>
+<ul>
+  <li> Time interval of data can be specified as every 5 minutes, hourly or daily</li>
+  <li> There are 3 level each which can be specified for Sigma Violation Run Test and Anomaly Detection Level </li>
+  <li> Sensor of concern is specified to view their readings individually</li>
+  <li> Period of concern can be adjusted (via the slider) by specifying the start and end of the period</li>
+  <li> An exclusion period can be specified to exclude its data from the chart and computation</li>
+  <li> Users can choose another set of Sensor and Period for ease of comparison</li>
+</ul>
+
+<h5 class="ui header">How To Interpret XmR and Sigma Violation Charts</h5>
+<li> If the sigma line is close to standard deviation line, it signals the lack of systematic variation in the process  </li>
+<li> If the sigma line deviates from the standard deviation line, it signals significant systematic variation in the process </li>
+<li> Look at mR chart first, if mR chart is out of control, then control limits on Individual-X chart are meaningless</li>
+<li> After reviewing the mR chart, look for point that exceed the 3 sigma limits</li>
+<li> In addition to looking for points exceeding the 3 sigma limit, we can apply additional rules via Sigma Violation Chart to provide an earlier warning that process are out of control </li>
+<ol>
+  <li>Violation same side: 8 or more consecutive points on the same side</li>
+  <li>Violation same side: 4 or more consecutive points on the same side exceeding 1 sigma</li>
+  <li>Violation same side: 2 or more consecutive points on the same side exceeding 2 sigma</li>
+  <li>Violation same side: any points exceeding 3 sigma</li>
+</ol>
+For points that are deemed out of control, consider the context, possible reasons for failure, and if it warrants further actions.
+
+<h5 class="ui header">How To Interpret Anomaly Chart</h5>
+<li> Points that are highlighted in red are deemed to be anomalous after considering trend and seasonality patterns</li>
+
+</body>
+</html>
