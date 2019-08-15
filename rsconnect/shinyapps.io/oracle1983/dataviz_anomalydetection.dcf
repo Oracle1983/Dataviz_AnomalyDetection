@@ -5,6 +5,6 @@ account: oracle1983
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1085799
-bundleId: 2322441
+bundleId: 2322507
 url: https://oracle1983.shinyapps.io/dataviz_anomalydetection/
-when: 1565877020.50063
+when: 1565878356.08078
