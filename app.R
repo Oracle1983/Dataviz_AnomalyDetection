@@ -512,9 +512,9 @@ server <- shinyServer(function(input, output, session) {
     data <- data[data$FunSys_item==input$hFunSys_item_pc,]
     
     # Convert date into unix time
-    unixtime <- as.numeric(as.POSIXct(data$date, format="%Y-%m-%d %H:%M:%S"))
-    unix1 <- as.numeric(as.POSIXct(input$hsliderDate2_pc, format="%Y-%m-%d %H:%M:%S"))
-    unix2 <- as.numeric(as.POSIXct(input$hsliderDate2_pc+(86400*as.numeric(input$hrange_pc)), format="%Y-%m-%d %H:%M:%S"))
+    unixtime <- as.integer(as.POSIXct(data$date, format="%Y-%m-%d %H:%M:%S"))
+    unix1 <- as.integer(as.POSIXct(input$hsliderDate2_pc, format="%Y-%m-%d %H:%M:%S"))
+    unix2 <- as.integer(as.POSIXct(input$hsliderDate2_pc+(86400*as.numeric(input$hrange_pc)), format="%Y-%m-%d %H:%M:%S"))
     
     # Plot Parallel Coordinates
     if(input$hFunSys_item_pc == '40') {
@@ -524,7 +524,7 @@ server <- shinyServer(function(input, output, session) {
                     showscale=TRUE,
                     reversescale=TRUE,
                     colorbar=list(
-                      title="Time (Red:Earliest, Blue:Latest)"
+                      title="UNIX_Time (Red:Earliest, Blue:Latest)"
                       )
                     ),
         type = 'parcoords',
