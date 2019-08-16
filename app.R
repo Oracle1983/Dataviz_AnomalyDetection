@@ -522,7 +522,11 @@ server <- shinyServer(function(input, output, session) {
         line = list(color = unixtime,
                     colorscale='Jet',
                     showscale=TRUE,
-                    reversescale=TRUE),
+                    reversescale=TRUE,
+                    colorbar=list(
+                      title="Time (Red:Earliest, Blue:Latest)"
+                      )
+                    ),
         type = 'parcoords',
         frame = "Null", 
         dimensions = list(
