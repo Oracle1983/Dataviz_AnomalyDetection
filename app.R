@@ -149,7 +149,7 @@ ui <- dashboardPage(
                        sliderInput("hsliderDate_pc", 'Range of dates:',
                                    mindate,
                                    maxdate,
-                                   c(mindate, maxdate),
+                                   c(initial, maxdate),
                                    step = 300),
                        sliderInput("hsliderDate2_pc", 'Date (reference - min of Day Window):',
                                    mindate,
@@ -163,7 +163,7 @@ ui <- dashboardPage(
                          inputId="hinputDate_start_pc",
                          label = HTML("Exclude date from:"),
                          choices = c('select...'='NULL',unique(as.vector(per_hour['date']))),
-                         selected = NULL,
+                         selected = "2007-07-23 10:00:00",
                          multiple = FALSE,
                          selectize = FALSE,
                          width=200),
@@ -172,7 +172,7 @@ ui <- dashboardPage(
                          inputId="hinputDate_end_pc",
                          label = HTML("to:"),
                          choices = c('select...'='NULL',unique(as.vector(per_hour['date']))),
-                         selected = NULL,
+                         selected = "2007-07-24 15:00:00",
                          multiple = FALSE,
                          selectize = FALSE,
                          width=200),
@@ -187,7 +187,7 @@ ui <- dashboardPage(
                                      '7 days'=7,
                                      '14 days'=14,
                                      'All days'=max(unique(day(per_hour$date)))),
-                         selected = 1,
+                         selected = 3,
                          multiple = FALSE, 
                          selectize = FALSE),
                        
@@ -292,7 +292,7 @@ ui <- dashboardPage(
                        
                        selectInput(
                          inputId = 'hinterval',
-                         label = 'Time aggregation:', 
+                         label = 'Time Interval:', 
                          choices = '*',
                          multiple = FALSE, 
                          selectize = FALSE)
@@ -487,7 +487,7 @@ server <- shinyServer(function(input, output, session) {
                                      'Every hour'='per_hour.csv',
                                      'Every day'='per_day.csv'
                          ),
-                         select = 'per_hour.csv')
+                         select = 'per_5min.csv')
   })
   
   output$parallelplot <- renderPlotly({
