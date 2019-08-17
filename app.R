@@ -34,7 +34,8 @@
 #               'DT',
 #               'data.table',
 #               'rsconnect',
-#                'shinyLP')
+#               'shinyLP',
+#               'collapsibleTree')
 # 
 # for (p in packages) {
 #   if(!require(p, character.only = T)) {
@@ -60,6 +61,7 @@ library(DT)
 library(data.table)
 library(rsconnect)
 library(shinyLP)
+library(collapsibleTree)
 
 options(shiny.maxRequestSize = 30*1024^2)
 
@@ -95,6 +97,7 @@ ui <- dashboardPage(
     dashboardSidebar(size = "thin", color = "teal",
                      sidebarMenu(
                          menuItem(tabName = "overview", "Overview", icon=icon("clipboard outline")),
+                         menuItem(tabName = "data_explore", "Data Exploration", icon=icon("globe")),
                          menuItem(tabName = "parallelplot", "Parallel Plot", icon=icon("chart bar outline")),
                          menuItem(tabName = "horizongraph", "Horizon Graph",icon=icon("chart area")),
                          menuItem(tabName = "controlchart", "Control Chart",icon=icon("chart line"))
@@ -116,6 +119,38 @@ ui <- dashboardPage(
           panel_div(class_type = "primary",
                     panel_title = " ",
                     content = includeHTML("Overview.Rhtml"))
+        ),
+        ##########################################
+        ############### Data-start ###############
+        ##########################################
+        tabItem(
+          tabName = "data_explore",
+          fluidRow(
+            box(
+              splitLayout(
+                cellArgs = list(style = "padding-left:0px;padding-bottom:0px;"),
+                selectInput(
+                  inputId = 'einterval',
+                  label = 'Time Interval:', 
+                  choices = '*',
+                  multiple = FALSE, 
+                  selectize = FALSE)
+              ),
+              width = 3,
+              title = "",
+              color = "teal", ribbon = FALSE, title_side = "top left"
+            ),
+            
+            column(width = 8,
+                   h4("Visualize hierarchical data in a collapsible tree diagram"),
+                   ("Layer 1: Data |   Layer 2: Function System |   Layer 3: Measure Group |   Layer 4: Sensor ID"),
+                   collapsibleTreeOutput("etree", width = "150%", height = "350px")
+            ),
+            column(width = 10, 
+                   h4("Data"),
+                   DT::dataTableOutput("etable")
+            )
+          )
         ),
         ##########################################
         ########### parallelplot-start ###########
@@ -474,6 +509,53 @@ ui <- dashboardPage(
         
 
 server <- shinyServer(function(input, output, session) {
+  #################################################################
+  # [Data Exploration]                                            #
+  #################################################################
+  observe({
+    # Select time aggregation
+    updateSelectizeInput(session = session, 
+                         inputId = 'einterval', 
+                         choices = c('Every 5 mins'='five_min.csv',
+                                     'Every hour'='hourly.csv',
+                                     'Every day'='daily.csv'),
+                         select = 'hourly.csv')
+  })
+  
+  edata <- reactive ({
+    edata_temp <- read_csv(sprintf("data/%s",input$einterval), locale=locale(tz="Singapore"))
+    #edata_temp <- read_csv("data/daily.csv")
+    edata_temp <- as.data.frame(edata_temp)
+    
+    # Select by FunSys_item and MsureGr
+    #edata_temp <- edata_temp[edata_temp$FunSys_item==input$eFunSys_item,]
+    
+    # Select required columns
+    edata_temp <- select(edata_temp, date, ID, FunSys_item, MsureGr, Value, Unit)
+    
+    return(edata_temp)
+  })
+  
+  
+  # Plotting
+  output$etable = DT::renderDataTable({
+    Data = edata()
+    DT::datatable(Data,
+                  options = list(pageLength = 5))
+  })
+  
+  
+  output$etree <-  renderCollapsibleTree({
+    Data = edata()
+    collapsibleTreeSummary(
+      Data,
+      hierarchy = c("FunSys_item", "MsureGr", "ID"),
+      width = 300,
+      linkLength = 130,
+      nodeSize = "leafCount",
+      zoomable = TRUE)
+  })
+  
   #################################################################
   # [Parallel Plot]                                               #
   #################################################################
