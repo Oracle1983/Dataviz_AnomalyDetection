@@ -159,20 +159,25 @@ ui <- dashboardPage(
         tabItem(
           tabName = "fileupload",
           panel_div(class_type = "primary",
-                    panel_title = "Upload Raw Sensor Data File",
+                    panel_title = "",
                     fluidRow(
                       column(3,
                              box(
-                               fileInput("file1", "Choose RDS File",
+                               fileInput("file1", "Choose RDS File to upload.",
                                          multiple = FALSE,
                                          accept = c("text/rds",
-                                                    ".rds")
+                                                    ".rds")),
+                               HTML("<br></br>"),
+                               HTML("The app is pre-loaded with sensor data from 01-07-2007 to 31-07-2007.<br>
+                                    Uploading a new .rds file will initiate data processing and replace the default pre-loaded data."),
+                               width = 16,
+                               title = "Data Preparation for Visualisation",
+                               color = "teal", ribbon = TRUE, title_side = "top left"
                                          )
                                 )
                              )
                             )
-                    )
-                ),
+                    ),
         ##########################################
         ########### parallelplot-start ###########
         ##########################################
@@ -205,7 +210,7 @@ ui <- dashboardPage(
                        sliderInput("hsliderDate_pc", 'Range of dates:',
                                    mindate,
                                    maxdate,
-                                   c(initial, maxdate),
+                                   c(mindate, maxdate),
                                    step = 300),
                        sliderInput("hsliderDate2_pc", 'Date (reference - min of Day Window):',
                                    mindate,
@@ -219,7 +224,6 @@ ui <- dashboardPage(
                          inputId="hinputDate_start_pc",
                          label = HTML("Exclude date from:"),
                          choices = c('select...'='NULL',unique(as.vector(per_hour['date']))),
-                         selected = "2007-07-23 10:00:00",
                          multiple = FALSE,
                          selectize = FALSE,
                          width=200),
@@ -228,7 +232,6 @@ ui <- dashboardPage(
                          inputId="hinputDate_end_pc",
                          label = HTML("to:"),
                          choices = c('select...'='NULL',unique(as.vector(per_hour['date']))),
-                         selected = "2007-07-24 15:00:00",
                          multiple = FALSE,
                          selectize = FALSE,
                          width=200),
