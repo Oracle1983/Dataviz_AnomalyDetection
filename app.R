@@ -19,51 +19,51 @@
 
 # ########################################################################################################################
 
-# packages <- c('shiny',
-#               'semantic.dashboard',
-#               'tidyverse',
-#               'plotly',
-#               'latticeExtra',
-#               'openair',
-#               'DataCombine',
-#               'ggQC',
-#               'xts',
-#               'lubridate',
-#               'tibbletime',
-#               'anomalize',
-#               'DT',
-#               'data.table',
-#               'rsconnect',
-#               'shinyLP',
-#               'collapsibleTree')
-# 
-# for (p in packages) {
-#   if(!require(p, character.only = T)) {
-#     install.packages(p)
-#   }
-#   library(p, character.only = T)
-# }
+packages <- c('shiny',
+              'semantic.dashboard',
+              'tidyverse',
+              'plotly',
+              'latticeExtra',
+              'openair',
+              'DataCombine',
+              'ggQC',
+              'xts',
+              'lubridate',
+              'tibbletime',
+              'anomalize',
+              'DT',
+              'data.table',
+              'rsconnect',
+              'shinyLP',
+              'collapsibleTree')
+
+for (p in packages) {
+  if(!require(p, character.only = T)) {
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
 
 # For loading into shinyapp.io
-library(shiny)
-library(semantic.dashboard)
-library(tidyverse)
-library(plotly)
-library(latticeExtra)
-library(openair)
-library(DataCombine)
-library(ggQC)
-library(xts)
-library(lubridate)
-library(tibbletime)
-library(anomalize)
-library(DT)
-library(data.table)
-library(rsconnect)
-library(shinyLP)
-library(collapsibleTree)
+# library(shiny)
+# library(semantic.dashboard)
+# library(tidyverse)
+# library(plotly)
+# library(latticeExtra)
+# library(openair)
+# library(DataCombine)
+# library(ggQC)
+# library(xts)
+# library(lubridate)
+# library(tibbletime)
+# library(anomalize)
+# library(DT)
+# library(data.table)
+# library(rsconnect)
+# library(shinyLP)
+# library(collapsibleTree)
 
-options(shiny.maxRequestSize = 30*1024^2)
+options(shiny.maxRequestSize = 500*1024^2)
 
 # Load processed data (for choices under selectInput)
 hourly <- read_csv("./data/hourly.csv", locale=locale(tz="Singapore"))
@@ -98,6 +98,7 @@ ui <- dashboardPage(
                      sidebarMenu(
                          menuItem(tabName = "overview", "Overview", icon=icon("clipboard outline")),
                          menuItem(tabName = "data_explore", "Data Exploration", icon=icon("globe")),
+                         menuItem(tabName = "fileupload", "File Upload", icon=icon("upload")),
                          menuItem(tabName = "parallelplot", "Parallel Plot", icon=icon("chart bar outline")),
                          menuItem(tabName = "horizongraph", "Horizon Graph",icon=icon("chart area")),
                          menuItem(tabName = "controlchart", "Control Chart",icon=icon("chart line"))
@@ -152,6 +153,26 @@ ui <- dashboardPage(
             )
           )
         ),
+        ##########################################
+        ############# fileupload-start #############
+        ##########################################
+        tabItem(
+          tabName = "fileupload",
+          panel_div(class_type = "primary",
+                    panel_title = "Upload Raw Sensor Data File",
+                    fluidRow(
+                      column(3,
+                             box(
+                               fileInput("file1", "Choose RDS File",
+                                         multiple = FALSE,
+                                         accept = c("text/rds",
+                                                    ".rds")
+                                         )
+                                )
+                             )
+                            )
+                    )
+                ),
         ##########################################
         ########### parallelplot-start ###########
         ##########################################
@@ -556,6 +577,127 @@ server <- shinyServer(function(input, output, session) {
       zoomable = TRUE)
   })
   
+  #################################################################
+  # [Data Upload]                                            #
+  #################################################################
+  
+  observe({
+    req(input$file1)
+    
+    data <- readRDS(input$file1$datapath)
+    
+    ### Data processing (General)
+    colnames(data)[1] = "date"
+    data$Value <- data$Value %>% replace_na(0)
+    # Removed 2000+ rows with duplicated timestamps
+    data <- data %>% distinct()
+    
+    # Create a dictionary to populate details after aggregating timestamps
+    dict <- data %>% 
+      distinct(ID, .keep_all=T) %>%
+      select(-c("date","Value"))
+    
+    # Perform aggregation of timestamps in 5 mins interval        
+    five_min = timeAverage(data, avg.time="5 min", statistic="mean", type="ID")
+    five_min = merge(five_min, dict, by="ID", all.x=T)
+    # Perform aggregation of timestamps in hourly interval        
+    hourly = timeAverage(data, avg.time="hour", statistic="mean", type="ID")
+    hourly = merge(hourly, dict, by="ID", all.x=T)
+    # Perform aggregation of timestamps in daily interval        
+    daily = timeAverage(five_min, avg.time="day", statistic="mean", type="ID")
+    daily = merge(daily, dict, by="ID", all.x=T)
+    
+    # Output files in csv
+    write.csv(five_min, "./data/five_min.csv")
+    write.csv(hourly, "./data/hourly.csv")
+    write.csv(daily, "./data/daily.csv")
+    
+    ### Data processing (Parallel Coord)
+    data_pc_5min = five_min %>% spread(MsureGr_lvl, Value)
+    data_pc_hourly = hourly %>% spread(MsureGr_lvl, Value)
+    data_pc_daily = daily %>% spread(MsureGr_lvl, Value)
+    
+    # Prepare data for Parallel coordinates plot (FunSys_item)
+    per_day = group_by(data_pc_daily, date, FunSys_item) %>% summarize(
+      X1_ave = mean(X1_ave, na.rm = T),
+      X1_DC = mean(X1_DC, na.rm = T),
+      X1_max = mean(X1_max, na.rm = T),
+      X1_min = mean(X1_min, na.rm = T),
+      X2_ave = mean(X2_ave, na.rm = T),
+      X2_DC = mean(X2_DC, na.rm = T),
+      X2_R1_ave = mean(X2_R1_ave, na.rm = T),
+      X2_R1_max = mean(X2_R1_max, na.rm = T),
+      X2_R2_ave = mean(X2_R2_ave, na.rm = T),
+      X2_R2_max = mean(X2_R2_max, na.rm = T),
+      X2_R3_ave = mean(X2_R3_ave, na.rm = T),
+      X2_R3_max = mean(X2_R3_max, na.rm = T),
+      BOT = mean(BOT, na.rm = T),
+      MBA01 = mean(MBA01, na.rm = T),
+      MBA0GD020 = mean(MBA01GD020, na.rm = T),
+      MBA0GD040 = mean(MBA01GD040, na.rm = T),
+      MBA0GD070 = mean(MBA01GD070, na.rm = T),
+      MBA0GD080 = mean(MBA01GD080, na.rm = T),
+      TIT1 = mean(TIT1, na.rm = T),
+      TIT2 = mean(TIT2, na.rm = T),
+      TOP = mean(TOP, na.rm = T),
+      X.NA. = mean(X.NA., na.rm = T)
+    )
+    
+    per_hour = group_by(data_pc_hourly, date, FunSys_item) %>% summarize(
+      X1_ave = mean(X1_ave, na.rm = T),
+      X1_DC = mean(X1_DC, na.rm = T),
+      X1_max = mean(X1_max, na.rm = T),
+      X1_min = mean(X1_min, na.rm = T),
+      X2_ave = mean(X2_ave, na.rm = T),
+      X2_DC = mean(X2_DC, na.rm = T),
+      X2_R1_ave = mean(X2_R1_ave, na.rm = T),
+      X2_R1_max = mean(X2_R1_max, na.rm = T),
+      X2_R2_ave = mean(X2_R2_ave, na.rm = T),
+      X2_R2_max = mean(X2_R2_max, na.rm = T),
+      X2_R3_ave = mean(X2_R3_ave, na.rm = T),
+      X2_R3_max = mean(X2_R3_max, na.rm = T),
+      BOT = mean(BOT, na.rm = T),
+      MBA01 = mean(MBA01, na.rm = T),
+      MBA0GD020 = mean(MBA01GD020, na.rm = T),
+      MBA0GD040 = mean(MBA01GD040, na.rm = T),
+      MBA0GD070 = mean(MBA01GD070, na.rm = T),
+      MBA0GD080 = mean(MBA01GD080, na.rm = T),
+      TIT1 = mean(TIT1, na.rm = T),
+      TIT2 = mean(TIT2, na.rm = T),
+      TOP = mean(TOP, na.rm = T),
+      X.NA. = mean(X.NA., na.rm = T)
+    )
+    
+    per_5min = group_by(data_pc_5min, date, FunSys_item) %>% summarize(
+      X1_ave = mean(X1_ave, na.rm = T),
+      X1_DC = mean(X1_DC, na.rm = T),
+      X1_max = mean(X1_max, na.rm = T),
+      X1_min = mean(X1_min, na.rm = T),
+      X2_ave = mean(X2_ave, na.rm = T),
+      X2_DC = mean(X2_DC, na.rm = T),
+      X2_R1_ave = mean(X2_R1_ave, na.rm = T),
+      X2_R1_max = mean(X2_R1_max, na.rm = T),
+      X2_R2_ave = mean(X2_R2_ave, na.rm = T),
+      X2_R2_max = mean(X2_R2_max, na.rm = T),
+      X2_R3_ave = mean(X2_R3_ave, na.rm = T),
+      X2_R3_max = mean(X2_R3_max, na.rm = T),
+      BOT = mean(BOT, na.rm = T),
+      MBA01 = mean(MBA01, na.rm = T),
+      MBA0GD020 = mean(MBA01GD020, na.rm = T),
+      MBA0GD040 = mean(MBA01GD040, na.rm = T),
+      MBA0GD070 = mean(MBA01GD070, na.rm = T),
+      MBA0GD080 = mean(MBA01GD080, na.rm = T),
+      TIT1 = mean(TIT1, na.rm = T),
+      TIT2 = mean(TIT2, na.rm = T),
+      TOP = mean(TOP, na.rm = T),
+      X.NA. = mean(X.NA., na.rm = T)
+    )
+    
+    # Output files in csv
+    write.csv(per_5min, "./data/per_5min.csv")
+    write.csv(per_hour, "./data/per_hour.csv")
+    write.csv(per_day, "./data/per_day.csv")
+  })
   #################################################################
   # [Parallel Plot]                                               #
   #################################################################
@@ -1398,8 +1540,6 @@ server <- shinyServer(function(input, output, session) {
     
     ggplotly(a2)
   })  
-  
-  
   
 }) # end for shinyServer(
 
